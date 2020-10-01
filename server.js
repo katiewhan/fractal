@@ -9,4 +9,5 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.static(__dirname + '/public'))
 
-http.createServer(app).listen(80, () => { console.log("Server listening on port 80") })
+const port = process.env.PORT || 3000
+http.createServer(app).listen(port, () => { console.log(`Server listening on port ${port}`) })
