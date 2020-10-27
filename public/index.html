@@ -4,14 +4,45 @@
         <title>Online Fractals Prototype</title>
         <style>
 			body { margin: 0; }
-			canvas { display: block; }
+            canvas { display: block; }
+            img { display: none; }
         </style>
     </head>
     <body>
-        <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r120/three.min.js"></script> -->
+        <script type="text/javascript" src="static/three.min.js"></script>
+        <script type="text/javascript" src="static/orbitControls.js"></script>
+        <script type="text/javascript" src="static/dat.gui.min.js"></script>
         <audio id="inputAudio" src="static/sample.mp3"></audio>
+        <img id="testImg" src="static/test.png">
         <button id="playButton" role="switch"><span>Play/Pause</span></button>
-        <canvas id="canvas"></canvas>
+        <!-- <canvas id="canvas"></canvas> -->
+        <script type="x-shader/x-vertex" id="vertexshader">
+            uniform sampler2D tex0;
+            
+            out float texValue;
+            out vec2 texCoord;
+            
+            void main()
+            {
+                vec3 modifiedPosition = position;
+            
+                texCoord = uv;
+                texValue = texture(tex0, uv).r;
+                modifiedPosition.z += texValue * 50.0;
+            
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(modifiedPosition, 1.0);
+            }
+
+        </script>
+
+        <script type="x-shader/x-fragment" id="fragmentshader">
+                        
+            void main() {
+                gl_FragColor = vec4(0.5, 0.2, 1.0, 0.1);
+            }
+
+        </script>
+        
         <script type="text/javascript" src="script.js"></script>
     </body>
 </html>
