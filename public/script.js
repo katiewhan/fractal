@@ -56,22 +56,31 @@ class App {
     draw = () => {
         requestAnimationFrame(this.draw)
         this.audio.update()
-        this.scene.update(this.audio.dataArray)
+        if (this.scene) this.scene.update(this.audio.dataArray)
     }
 
     loadFractal = () => {
-        fetch('https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?w1=0.2&w2=0.3&w3=0.5&w4=0.4').then(res => res.blob()).then(data => {
-            let img = new Image();
-            img.onload = () => {
-              let imgData = getImageData(img, w, h); // mark our image as origin clean
-              URL.revokeObjectURL(img.src);
+        this.audio = new Audio()
+        this.draw()
 
-                this.scene = new Scene(imgData)
-                this.audio = new Audio()
-                this.draw()
+        // TODO: this should be after microphone granted
+        setTimeout(() => {
+            const weights = this.audio.getFractalSeedInfo()
+            let params = ''
+            for (let i = 0; i < weights.length; i++) {
+                params += `w${i}=${weights[i]}&`
             }
-            img.src = URL.createObjectURL(data)
-        });
+            fetch(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`).then(res => res.blob()).then(data => {
+                let img = new Image();
+                img.onload = () => {
+                  let imgData = getImageData(img, w, h); // mark our image as origin clean
+                  URL.revokeObjectURL(img.src);
+    
+                    this.scene = new Scene(imgData)
+                }
+                img.src = URL.createObjectURL(data)
+            })
+        }, 10000)
     }
 }
 
@@ -162,50 +171,16 @@ class Scene {
         // this.camera.position.z -= 0.1
         // this.camera.rotat
         for (let s = 0; s < this.spheres.length; s++) {
+            this.spheres[s].shape.rotation.x += 0.001
+            this.spheres[s].shape.rotation.y += 0.0003
+            this.spheres[s].shape.rotation.z += 0.0008
+
             this.spheres[s].shape.position.z = this.spheres[s].z * (fft[Math.round(Math.atan2(this.spheres[s].x, this.spheres[s].y) * 100)] / 180)
         }
         this.controls.update()
         this.renderer.render(this.scene, this.camera)
     }
     
-}
-
-class Audio {
-    constructor() {
-        const AudioContext = window.AudioContext || window.webkitAudioContext
-        this.audioContext = new AudioContext()
-        this.audioAnalyser = this.audioContext.createAnalyser()
-        
-        this.connectAudioSource(document.getElementById('inputAudio'))
-
-        // Allocate dataArray which will contain FFT data of audio
-        this.bufferLength = this.audioAnalyser.frequencyBinCount
-        this.dataArray = new Uint8Array(this.bufferLength)
-    }
-
-    connectAudioSource = (audioElement) => {
-        const track = this.audioContext.createMediaElementSource(audioElement)
-        track.connect(this.audioAnalyser)
-        this.audioAnalyser.connect(this.audioContext.destination)
-
-        this.isAudioPlaying = false
-        document.getElementById('playButton').addEventListener('click', () => {
-            if (this.audioContext.state == 'suspended') {
-                this.audioContext.resume()
-            }
-
-            if (this.isAudioPlaying) {
-                audioElement.pause()
-            } else {
-                audioElement.play()
-            }
-            this.isAudioPlaying = !this.isAudioPlaying
-        })
-    }
-
-    update = () => {
-        this.audioAnalyser.getByteTimeDomainData(this.dataArray)
-    }
 }
 
 const app = new App()
