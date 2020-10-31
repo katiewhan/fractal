@@ -51,17 +51,22 @@ const w = 150, h = 150
 
 class App {
     constructor() {
+        this.audio = new Audio(this.loadFractal)
+        this.scene = new Scene()
+        this.shouldUpdateAudio = false
+        this.shouldUpdateScene = false
     }
 
     draw = () => {
         requestAnimationFrame(this.draw)
-        this.audio.update()
-        if (this.scene) this.scene.update(this.audio.dataArray)
+        if (this.shouldUpdateAudio) this.audio.update()
+        if (this.shouldUpdateScene) this.scene.update(this.audio.dataArray)
     }
 
     loadFractal = () => {
-        this.audio = new Audio()
-        this.draw()
+        this.shouldUpdateAudio = true
+        // this.audio = new Audio()
+        // this.draw()
 
         // TODO: this should be after microphone granted
         setTimeout(() => {
@@ -70,22 +75,24 @@ class App {
             for (let i = 0; i < weights.length; i++) {
                 params += `w${i}=${weights[i]}&`
             }
+//            fetch(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/pub/MusicFractalBot?${params}`, {method:'GET', headers:{'x-api-key':'tRDEaRkO7aaWyzl67ZAV55UUkN0p1BfD8FEpkMkY'}}).then(res => res.blob()).then(data => {
             fetch(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`).then(res => res.blob()).then(data => {
                 let img = new Image();
                 img.onload = () => {
-                  let imgData = getImageData(img, w, h); // mark our image as origin clean
-                  URL.revokeObjectURL(img.src);
+                    let imgData = getImageData(img, w, h); // mark our image as origin clean
+                    URL.revokeObjectURL(img.src);
     
-                    this.scene = new Scene(imgData)
+                    this.scene.setImageData(imgData)
+                    this.shouldUpdateScene = true
                 }
                 img.src = URL.createObjectURL(data)
             })
-        }, 0)
+        }, 8000)
     }
 }
 
 class Scene {
-    constructor(imgData) {
+    constructor() {
         const WIDTH = window.innerWidth, HEIGHT = window.innerHeight
         this.scene = new THREE.Scene()
         this.camera = new THREE.PerspectiveCamera(/* FOV */ 75, WIDTH / HEIGHT, /* near */ 0.1, /* far */ 1000)
@@ -119,9 +126,13 @@ class Scene {
 
         this.camera.position.set(w / 2, h / 2, 100);
 
+        
+    }
+
+    setImageData = (imgData) => {
+
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement)
         this.controls.target = new THREE.Vector3(w / 2, h / 2, 0);
-
         // const fractalImage = document.getElementById('testImg')
         // const fractalImageData = getImageData( fractalImage, w, h )
         const fractalImageData = imgData
@@ -130,11 +141,10 @@ class Scene {
                 let colorValue = getPixel(fractalImageData, i, j).r
 
                 if (colorValue > 0) {
-                    this.addSphere(i , j , colorValue / 6)
+                    this.addSphere(i , j , colorValue / 10)
                 }
             }
         }
-        
     }
 
     onWindowResize = () => {
@@ -184,12 +194,12 @@ class Scene {
             this.spheres[s].shape.rotation.y += 0.003 * this.spheres[s].rand
             this.spheres[s].shape.rotation.z += 0.008 * this.spheres[s].rand
 
-            const index = Math.round(Math.atan2(this.spheres[s].x, this.spheres[s].y) * 180 / Math.PI)
+            const index = Math.round(Math.atan2(this.spheres[s].x, this.spheres[s].y) * 200)
             let value = fft[index]
             if (this.prevFft) {
                 value = value * 0.01 + this.prevFft[index] * 0.99
             }
-            this.spheres[s].shape.position.z = this.spheres[s].z * value* 0.01
+            this.spheres[s].shape.position.z = this.spheres[s].z * value* 0.013
         }
         this.prevFft = fft
         this.controls.update()
@@ -199,4 +209,4 @@ class Scene {
 }
 
 const app = new App()
-app.loadFractal()
+app.draw()
