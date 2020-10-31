@@ -70,6 +70,7 @@ class App {
             for (let i = 0; i < weights.length; i++) {
                 params += `w${i}=${weights[i]}&`
             }
+//            fetch(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/pub/MusicFractalBot?${params}`, {method:'GET', headers:{'x-api-key':'tRDEaRkO7aaWyzl67ZAV55UUkN0p1BfD8FEpkMkY'}}).then(res => res.blob()).then(data => {
             fetch(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`).then(res => res.blob()).then(data => {
                 let img = new Image();
                 img.onload = () => {
