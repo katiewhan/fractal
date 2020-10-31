@@ -80,7 +80,7 @@ class App {
                 }
                 img.src = URL.createObjectURL(data)
             })
-        }, 10000)
+        }, 0)
     }
 }
 
@@ -96,6 +96,8 @@ class Scene {
         this.renderer.setSize(WIDTH, HEIGHT)
         document.body.appendChild(this.renderer.domElement);
 
+        window.addEventListener('resize', this.onWindowResize)
+
         // GUI controls
         // this.controls = {
         //     meshWidth: 20,
@@ -103,7 +105,7 @@ class Scene {
         //     meshWidthSegs: 20,
         //     meshHeightSegs: 20,
         // }
-        this.gui = new dat.GUI()
+        // this.gui = new dat.GUI()
         // this.gui.add(this.controls, 'meshWidth', 0, 100)
         // this.gui.add(this.controls, 'meshHeight', 0, 100)
         // this.gui.add(this.controls, 'meshWidthSegs', 0, 100)
@@ -115,7 +117,7 @@ class Scene {
         this.spheres = []
         // this.addMesh()
 
-        this.camera.position.set(w / 2, h / 2, 80);
+        this.camera.position.set(w / 2, h / 2, 100);
 
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement)
         this.controls.target = new THREE.Vector3(w / 2, h / 2, 0);
@@ -133,6 +135,12 @@ class Scene {
             }
         }
         
+    }
+
+    onWindowResize = () => {
+        this.camera.aspect = window.innerWidth / window.innerHeight
+        this.camera.updateProjectionMatrix()
+        this.renderer.setSize( window.innerWidth, window.innerHeight )
     }
 
     addMesh = () => {
@@ -158,7 +166,8 @@ class Scene {
         const sphere = new THREE.Mesh( geometry, material )
         this.scene.add( sphere )
         sphere.position.set(x, y, z)
-        this.spheres.push({ shape: sphere, x, y, z })
+        sphere.rotation.set(Math.random() * 180, Math.random() * 180, Math.random() * 180)
+        this.spheres.push({ shape: sphere, x, y, z, rand: Math.random() })
     }
 
     addLight = (color, x, y, z) => {
@@ -171,12 +180,18 @@ class Scene {
         // this.camera.position.z -= 0.1
         // this.camera.rotat
         for (let s = 0; s < this.spheres.length; s++) {
-            this.spheres[s].shape.rotation.x += 0.001
-            this.spheres[s].shape.rotation.y += 0.0003
-            this.spheres[s].shape.rotation.z += 0.0008
+            this.spheres[s].shape.rotation.x += 0.001 * this.spheres[s].rand
+            this.spheres[s].shape.rotation.y += 0.003 * this.spheres[s].rand
+            this.spheres[s].shape.rotation.z += 0.008 * this.spheres[s].rand
 
-            this.spheres[s].shape.position.z = this.spheres[s].z * (fft[Math.round(Math.atan2(this.spheres[s].x, this.spheres[s].y) * 100)] / 180)
+            const index = Math.round(Math.atan2(this.spheres[s].x, this.spheres[s].y) * 180 / Math.PI)
+            let value = fft[index]
+            if (this.prevFft) {
+                value = value * 0.01 + this.prevFft[index] * 0.99
+            }
+            this.spheres[s].shape.position.z = this.spheres[s].z * value* 0.01
         }
+        this.prevFft = fft
         this.controls.update()
         this.renderer.render(this.scene, this.camera)
     }
