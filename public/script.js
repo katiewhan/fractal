@@ -51,17 +51,22 @@ const w = 150, h = 150
 
 class App {
     constructor() {
+        this.audio = new Audio(this.loadFractal)
+        this.scene = new Scene()
+        this.shouldUpdateAudio = false
+        this.shouldUpdateScene = false
     }
 
     draw = () => {
         requestAnimationFrame(this.draw)
-        this.audio.update()
-        if (this.scene) this.scene.update(this.audio.dataArray)
+        if (this.shouldUpdateAudio) this.audio.update()
+        if (this.shouldUpdateScene) this.scene.update(this.audio.dataArray)
     }
 
     loadFractal = () => {
-        this.audio = new Audio()
-        this.draw()
+        this.shouldUpdateAudio = true
+        // this.audio = new Audio()
+        // this.draw()
 
         // TODO: this should be after microphone granted
         setTimeout(() => {
@@ -77,19 +82,20 @@ class App {
             fetch(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`).then(res => res.blob()).then(data => {
                 let img = new Image();
                 img.onload = () => {
-                  let imgData = getImageData(img, w, h); // mark our image as origin clean
-                  URL.revokeObjectURL(img.src);
+                    let imgData = getImageData(img, w, h); // mark our image as origin clean
+                    URL.revokeObjectURL(img.src);
     
-                    this.scene = new Scene(imgData)
+                    this.scene.setImageData(imgData)
+                    this.shouldUpdateScene = true
                 }
                 img.src = URL.createObjectURL(data)
             })
-        }, 10000)
+        }, 8000)
     }
 }
 
 class Scene {
-    constructor(imgData) {
+    constructor() {
         const WIDTH = window.innerWidth, HEIGHT = window.innerHeight
         this.scene = new THREE.Scene()
         this.camera = new THREE.PerspectiveCamera(/* FOV */ 75, WIDTH / HEIGHT, /* near */ 0.1, /* far */ 1000)
@@ -100,6 +106,8 @@ class Scene {
         this.renderer.setSize(WIDTH, HEIGHT)
         document.body.appendChild(this.renderer.domElement);
 
+        window.addEventListener('resize', this.onWindowResize)
+
         // GUI controls
         // this.controls = {
         //     meshWidth: 20,
@@ -107,7 +115,7 @@ class Scene {
         //     meshWidthSegs: 20,
         //     meshHeightSegs: 20,
         // }
-        this.gui = new dat.GUI()
+        // this.gui = new dat.GUI()
         // this.gui.add(this.controls, 'meshWidth', 0, 100)
         // this.gui.add(this.controls, 'meshHeight', 0, 100)
         // this.gui.add(this.controls, 'meshWidthSegs', 0, 100)
@@ -119,11 +127,15 @@ class Scene {
         this.spheres = []
         // this.addMesh()
 
-        this.camera.position.set(w / 2, h / 2, 80);
+        this.camera.position.set(w / 2, h / 2, 100);
+
+        
+    }
+
+    setImageData = (imgData) => {
 
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement)
         this.controls.target = new THREE.Vector3(w / 2, h / 2, 0);
-
         // const fractalImage = document.getElementById('testImg')
         // const fractalImageData = getImageData( fractalImage, w, h )
         const fractalImageData = imgData
@@ -132,11 +144,16 @@ class Scene {
                 let colorValue = getPixel(fractalImageData, i, j).r
 
                 if (colorValue > 0) {
-                    this.addSphere(i , j , colorValue / 6)
+                    this.addSphere(i , j , colorValue / 10)
                 }
             }
         }
-        
+    }
+
+    onWindowResize = () => {
+        this.camera.aspect = window.innerWidth / window.innerHeight
+        this.camera.updateProjectionMatrix()
+        this.renderer.setSize( window.innerWidth, window.innerHeight )
     }
 
     addMesh = () => {
@@ -162,7 +179,8 @@ class Scene {
         const sphere = new THREE.Mesh( geometry, material )
         this.scene.add( sphere )
         sphere.position.set(x, y, z)
-        this.spheres.push({ shape: sphere, x, y, z })
+        sphere.rotation.set(Math.random() * 180, Math.random() * 180, Math.random() * 180)
+        this.spheres.push({ shape: sphere, x, y, z, rand: Math.random() })
     }
 
     addLight = (color, x, y, z) => {
@@ -175,12 +193,18 @@ class Scene {
         // this.camera.position.z -= 0.1
         // this.camera.rotat
         for (let s = 0; s < this.spheres.length; s++) {
-            this.spheres[s].shape.rotation.x += 0.001
-            this.spheres[s].shape.rotation.y += 0.0003
-            this.spheres[s].shape.rotation.z += 0.0008
+            this.spheres[s].shape.rotation.x += 0.001 * this.spheres[s].rand
+            this.spheres[s].shape.rotation.y += 0.003 * this.spheres[s].rand
+            this.spheres[s].shape.rotation.z += 0.008 * this.spheres[s].rand
 
-            this.spheres[s].shape.position.z = this.spheres[s].z * (fft[Math.round(Math.atan2(this.spheres[s].x, this.spheres[s].y) * 100)] / 180)
+            const index = Math.round(Math.atan2(this.spheres[s].x, this.spheres[s].y) * 200)
+            let value = fft[index]
+            if (this.prevFft) {
+                value = value * 0.01 + this.prevFft[index] * 0.99
+            }
+            this.spheres[s].shape.position.z = this.spheres[s].z * value* 0.013
         }
+        this.prevFft = fft
         this.controls.update()
         this.renderer.render(this.scene, this.camera)
     }
@@ -188,4 +212,4 @@ class Scene {
 }
 
 const app = new App()
-app.loadFractal()
+app.draw()

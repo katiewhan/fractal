@@ -2,15 +2,15 @@ function hasGetUserMedia() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
 }
 
-const WIDTH = 1200, HEIGHT = 200
-const canvas = document.getElementById('canvas')
-canvas.width = WIDTH
-canvas.height = HEIGHT
-const ctx = canvas.getContext('2d')
-ctx.clearRect(0, 0, WIDTH, HEIGHT);
+// const WIDTH = 1200, HEIGHT = 200
+// const canvas = document.getElementById('canvas')
+// canvas.width = WIDTH
+// canvas.height = HEIGHT
+// const ctx = canvas.getContext('2d')
+// ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
 class Audio {
-    constructor() {
+    constructor(callback) {
         const AudioContext = window.AudioContext || window.webkitAudioContext
         this.audioContext = new AudioContext()
         this.audioAnalyser = this.audioContext.createAnalyser()
@@ -80,21 +80,21 @@ class Audio {
         this.audioAnalyser.getByteFrequencyData(this.dataArray)
         this.fractalAnalysis.updateFft(this.dataArray)
 
-        // FFT visualization to help developing
-        ctx.fillStyle = 'rgb(200, 200, 200)';
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
         this.audioAnalyser.getByteTimeDomainData(this.dataArray)
-        ctx.fillStyle = 'rgb(0, 100, 100)';
-        ctx.beginPath();
+        // // FFT visualization to help developing
+        // ctx.fillStyle = 'rgb(200, 200, 200)';
+        // ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        // ctx.fillStyle = 'rgb(0, 100, 100)';
+        // ctx.beginPath();
 
-        let x = 0
-        let xWidth = WIDTH / this.bufferLength
-        for (let i = 0; i < this.bufferLength; i++) {
-            let value = this.dataArray[i] * (HEIGHT / 128.0)
+        // let x = 0
+        // let xWidth = WIDTH / this.bufferLength
+        // for (let i = 0; i < this.bufferLength; i++) {
+        //     let value = this.dataArray[i] * (HEIGHT / 128.0)
 
-            ctx.fillRect(x, HEIGHT - (value / 2), xWidth, value)
-            x += xWidth
-        }
+        //     ctx.fillRect(x, HEIGHT - (value / 2), xWidth, value)
+        //     x += xWidth
+        // }
     }
 
     getFractalSeedInfo = () => {
