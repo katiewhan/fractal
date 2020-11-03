@@ -5,18 +5,54 @@
         <style>
 			body { margin: 0; }
             canvas { display: block; }
-            img { display: none; }
+            #page {
+                width: 100vw;
+                height: 100vh;
+                background-color: black;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+            }
+            #title {
+                display: flex;
+                width: 70vw;
+                height: auto;
+            }
+            #inputAudioButton {
+                width: 200px;
+                height: 100px;
+                display: flex;
+                top: 60%;
+            }
+            #inputAudioImg {
+                max-width: 100%;
+                max-height: 100%;
+                opacity: 0.5;
+            }
+            #inputAudioImg:hover {
+                max-width: 100%;
+                max-height: 100%;
+                opacity: 1;
+                cursor: pointer;
+            }
+            #inputAudio {
+                display: none;
+            }
         </style>
     </head>
     <body>
         <script type="text/javascript" src="static/three.min.js"></script>
         <script type="text/javascript" src="static/orbitControls.js"></script>
-        <script type="text/javascript" src="static/dat.gui.min.js"></script>
-        <audio id="testAudio" src="static/sample.mp3"></audio>
-        <input type="file" id="inputAudio" accept="audio/*">
-        <!-- <img id="testImg" src="static/test.png"> -->
-        <button id="playButton" role="switch"><span>Play/Pause</span></button>
-        <!-- <canvas id="canvas"></canvas> -->
+        <audio id="audioElement"></audio>
+        <input type="file" id="inputAudio" accept="audio/*" onchange="startWithUploadFile(event)">
+        <div id="page">
+            <img id="title" src="static/DIMENSION.png">
+            <label for="inputAudio" id="inputAudioButton"><img id="inputAudioImg" src="static/UploadBtn.png"></label>
+            <!-- <img id="testImg" src="static/test.png"> -->
+            <!-- <button id="playButton" role="switch"><span>Play/Pause</span></button> -->
+            <!-- <canvas id="canvas"></canvas> -->
+        </div>
         <script type="text/javascript" src="audio.js"></script>
         <script type="text/javascript" src="script.js"></script>
     </body>

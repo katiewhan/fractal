@@ -2,15 +2,8 @@ function hasGetUserMedia() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
 }
 
-// const WIDTH = 1200, HEIGHT = 200
-// const canvas = document.getElementById('canvas')
-// canvas.width = WIDTH
-// canvas.height = HEIGHT
-// const ctx = canvas.getContext('2d')
-// ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
 class Audio {
-    constructor(callback) {
+    constructor(loadFractal) {
         const AudioContext = window.AudioContext || window.webkitAudioContext
         this.audioContext = new AudioContext()
         this.audioAnalyser = this.audioContext.createAnalyser()
@@ -21,15 +14,9 @@ class Audio {
         this.audioAnalyser.fftSize = 4096
         //32768
 
-        document.getElementById('inputAudio').addEventListener('change', (event) => {
-            const audioElement = document.getElementById('testAudio')
-            audioElement.src = URL.createObjectURL(event.currentTarget.files[0])
-            // this.connectAudioSource(audioElement)
-
-            callback()
-        })
-        
-        this.connectAudioSource(document.getElementById('testAudio'))
+        const audioElement = document.getElementById('audioElement')
+        this.connectAudioSource(audioElement)
+        loadFractal()
         // this.connectMicrophoneSource()
 
         // Allocate dataArray which will contain FFT data of audio
@@ -58,43 +45,57 @@ class Audio {
         track.connect(this.audioAnalyser)
         this.audioAnalyser.connect(this.audioContext.destination)
 
-        this.isAudioPlaying = false
-        document.getElementById('playButton').addEventListener('click', () => {
-            if (this.audioContext.state == 'suspended') {
-                this.audioContext.resume()
-            }
+        this.audioContext.resume()
+        audioElement.play()
 
-            if (this.isAudioPlaying) {
-                audioElement.pause()
-            } else {
-                audioElement.play()
-            }
-            this.isAudioPlaying = !this.isAudioPlaying
-        })
+        // this.isAudioPlaying = false
+        // document.getElementById('playButton').addEventListener('click', () => {
+        //     if (this.audioContext.state == 'suspended') {
+        //         this.audioContext.resume()
+        //     }
+
+        //     if (this.isAudioPlaying) {
+        //         audioElement.pause()
+        //     } else {
+        //         audioElement.play()
+        //     }
+        //     this.isAudioPlaying = !this.isAudioPlaying
+        // })
     }
 
     update = () => {
         this.audioAnalyser.getByteFrequencyData(this.dataArray)
         this.fractalAnalysis.updateFft(this.dataArray, this.audioContext.sampleRate)
-//        this.fractalAnalysis.updateFft([1,2,3,4,5,6], this.audioContext.sampleRate)
+        // this.fractalAnalysis.updateFft([1,2,3,4,5,6], this.audioContext.sampleRate)
 
         this.audioAnalyser.getByteTimeDomainData(this.dataArray)
+    }
 
-        // // FFT visualization to help developing
-        // ctx.fillStyle = 'rgb(200, 200, 200)';
-        // ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    setUpDebugViz = () => {
+        const WIDTH = 1200, HEIGHT = 200
+        const canvas = document.getElementById('canvas')
+        canvas.width = WIDTH
+        canvas.height = HEIGHT
+        const ctx = canvas.getContext('2d')
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    }
 
-        // ctx.fillStyle = 'rgb(0, 100, 100)';
-        // ctx.beginPath();
+    updateDebugViz = () => {
+        // FFT visualization to help developing
+        ctx.fillStyle = 'rgb(200, 200, 200)';
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-        // let x = 0
-        // let xWidth = WIDTH / this.bufferLength
-        // for (let i = 0; i < this.bufferLength; i++) {
-        //     let value = this.dataArray[i] * (HEIGHT / 128.0)
+        ctx.fillStyle = 'rgb(0, 100, 100)';
+        ctx.beginPath();
 
-        //     ctx.fillRect(x, HEIGHT - (value / 2), xWidth, value)
-        //     x += xWidth
-        // }
+        let x = 0
+        let xWidth = WIDTH / this.bufferLength
+        for (let i = 0; i < this.bufferLength; i++) {
+            let value = this.dataArray[i] * (HEIGHT / 128.0)
+
+            ctx.fillRect(x, HEIGHT - (value / 2), xWidth, value)
+            x += xWidth
+        }
     }
 
     getFractalSeedInfo = () => {
@@ -134,9 +135,9 @@ class AudioFractalAnalysis {
             }
         }
         this.max_frequencies.push( {freq: max_freq_index*res, value: max_val} )
-//        console.log(`Data length: ${fftArray.length}`)
-//        console.log(`Sample rate: ${sampleRate}`)
-//        console.log(`Max frequency: ${max_freq_index*res}`)
+        // console.log(`Data length: ${fftArray.length}`)
+        // console.log(`Sample rate: ${sampleRate}`)
+        // console.log(`Max frequency: ${max_freq_index*res}`)
     }
 
     // Called when we are ready to make the call to generate fractal; returns array of weights
