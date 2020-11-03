@@ -142,30 +142,30 @@ class AudioFractalAnalysis {
         this.max_frequencies.sort(function(a, b) {
             return b.index - a.index;
         })
-        // Take five equally spaced elements, look at their strength/value
-        let indexes = []
+        // Take five equally spaced frequencies
+        // How often do these frequencies that we have chosen show up in max_frequencies?
+        // What is the sum of their strengths/values?
         let w_values = []
         let m_values = []
-        let index = 0
         const spacing = Math.floor(this.max_frequencies.length / 5)
         for (let i = 0; i < 5; i++) {
-            index = i*spacing
-            indexes.push(this.max_frequencies[index].index)
-            m_values.push(this.max_frequencies[index].value)
-        }
-        // How often do these frequencies that we have chosen show up in max_frequencies?
-        for (let i = 0; i < indexes.length; i++) {
             let count = 0
+            let sum = 0
+            let freq_index = this.max_frequencies[i*spacing].index
             for (let j = 0; j < this.max_frequencies.length; j++) {
-                if (indexes[i] == this.max_frequencies[j].index) {
+                if (freq_index == this.max_frequencies[j].index) {
                     count++
+                    sum += this.max_frequencies[j].value
                 }
-                if (indexes[i] > this.max_frequencies[j].index) {
+                if (freq_index > this.max_frequencies[j].index) {
                     // max_frequencies has been sorted by decreasing index
                     break
                 } 
             }
+            // Weights: how often the frequency shows up
+            // Movements: average strength of the frequency
             w_values.push(count)
+            m_values.push(Math.floor(sum/count))
         }
         //console.log(this.max_frequencies)
         console.log(w_values)
