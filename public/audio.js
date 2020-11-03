@@ -7,12 +7,14 @@ class Audio {
         const AudioContext = window.AudioContext || window.webkitAudioContext
         this.audioContext = new AudioContext()
         this.audioAnalyser = this.audioContext.createAnalyser()
-        this.audioAnalyser.smoothingTimeConstant = 1
+        this.audioAnalyser.smoothingTimeConstant = 0.8 // should be not one to get FFT right
         
         // !! YOU CAN SET YOUR FFT SIZE VALUE LIKE THIS !!
         // must be a power of 2
         this.audioAnalyser.fftSize = 4096
-        //32768
+        console.log(`FFT size: ${this.audioAnalyser.fftSize}`)
+        console.log(`Min decibel level: ${this.audioAnalyser.minDecibels}`)
+        console.log(`Min decibel level: ${this.audioAnalyser.maxDecibels}`)
 
         const audioElement = document.getElementById('audioElement')
         this.connectAudioSource(audioElement)
@@ -23,7 +25,7 @@ class Audio {
         this.bufferLength = this.audioAnalyser.frequencyBinCount
         this.dataArray = new Uint8Array(this.bufferLength)
 
-        this.fractalAnalysis = new AudioFractalAnalysis()
+        this.fractalAnalysis = new AudioFractalAnalysis(this.audioContext.sampleRate)
     }
 
     connectMicrophoneSource = () => {
@@ -64,9 +66,9 @@ class Audio {
     }
 
     update = () => {
+//        this.audioAnalyser.getByteTimeDomainData(this.dataArray)
         this.audioAnalyser.getByteFrequencyData(this.dataArray)
-        this.fractalAnalysis.updateFft(this.dataArray, this.audioContext.sampleRate)
-        // this.fractalAnalysis.updateFft([1,2,3,4,5,6], this.audioContext.sampleRate)
+        this.fractalAnalysis.updateFft(this.dataArray)
 
         this.audioAnalyser.getByteTimeDomainData(this.dataArray)
     }
@@ -99,12 +101,12 @@ class Audio {
     }
 
     getFractalSeedInfo = () => {
-        return this.fractalAnalysis.getWeights()
+        return this.fractalAnalysis.getParameters()
     }
 }
 
 class AudioFractalAnalysis {
-    constructor() {
+    constructor(sampleRate) {
         // F5 E5 D5 C5 Bb4 A4 G4 F4 E4 D4 C4 Bb3 A3 G3 F3 E3 D3 C3 Bb2 A2 G2 F2 C2 D2 Bb1
         // special frequencies to potentially listen to
         this.freq = [
@@ -113,50 +115,64 @@ class AudioFractalAnalysis {
             116.54, 110, 97.999, 87.307, 65.406, 73.416, 58.27
         ]
         this.max_frequencies = []
-        this.frange_min = 50
-        this.frange_max = 700
-    }
-
-    // Called every frame with fftArray containing FFT data sampled at sampleRate
-    updateFft(fftArray, sampleRate) {
         // Resolution in frequency domain is sample rate divided by (time domain)
         // data length (time domain data length = twice fft length)
-        const res = sampleRate / (2 * fftArray.length)
-
-        // get max absolute value, determine which frequency it is
-        // save all of these that you get
-        // pick some
-        let max_val = 0
-        let max_freq_index = 0
-        for (let i = 0; i < fftArray.length; i++) {
-            if (max_val < Math.abs(fftArray[i])) {
-                max_val = Math.max(Math.abs(fftArray[i]))
-                max_freq_index = i
-            }
-        }
-        this.max_frequencies.push( {freq: max_freq_index*res, value: max_val} )
-        // console.log(`Data length: ${fftArray.length}`)
-        // console.log(`Sample rate: ${sampleRate}`)
-        // console.log(`Max frequency: ${max_freq_index*res}`)
+        this.sampleRate = sampleRate
     }
 
-    // Called when we are ready to make the call to generate fractal; returns array of weights
-    getWeights() {
-        // Sort by increasing frequency
-        this.max_frequencies.sort(function(a, b) {
-            return a.freq - b.freq;
-        })
-        console.log(this.max_frequencies)
-        // Take five equally spaced elements, look at their strength/value
-        let frequencies = []
-        let values = []
-        let spacing = Math.floor(this.max_frequencies.length / 5)
-        for (let i = 0; i < 5; i++) {
-            // add one to value to make sure return weights work out
-            frequencies.push(this.max_frequencies[i*spacing].freq)
-            values.push(this.max_frequencies[i*spacing].value + 1)
+    // Called every frame with fftArray containing FFT data
+    updateFft(fftArray) {
+        // get max absolute value, save frequency index
+        let max_val = 0
+        let max_index = 0
+        for (let i = 0; i < fftArray.length; i++) {
+            if (max_val < Math.abs(fftArray[i])) {
+                max_val = Math.abs(fftArray[i])
+                max_index = i
+            }
         }
-        console.log(values)
-        return values
+        this.max_frequencies.push( {index: max_index, value: max_val} )
+//        console.log(`Data length: ${fftArray.length}`)
+//        console.log(`Frequency resolution: ${res}`)
+//        console.log(`Second val: ${fftArray[1]}`)
+//        console.log(`Max frequency index: ${max_index}`)
+    }
+
+    // Called when we are ready to make the call to generate fractal;
+    // returns dictionary of parameters
+    getParameters() {
+        // Sort by decreasing frequency
+        this.max_frequencies.sort(function(a, b) {
+            return b.index - a.index;
+        })
+        // Take five equally spaced frequencies
+        // How often do these frequencies that we have chosen show up in max_frequencies?
+        // What is the sum of their strengths/values?
+        let w_values = []
+        let m_values = []
+        const spacing = Math.floor(this.max_frequencies.length / 5)
+        for (let i = 0; i < 5; i++) {
+            let count = 0
+            let sum = 0
+            let freq_index = this.max_frequencies[i*spacing].index
+            for (let j = 0; j < this.max_frequencies.length; j++) {
+                if (freq_index == this.max_frequencies[j].index) {
+                    count++
+                    sum += this.max_frequencies[j].value
+                }
+                if (freq_index > this.max_frequencies[j].index) {
+                    // max_frequencies has been sorted by decreasing index
+                    break
+                } 
+            }
+            // Weights: how often the frequency shows up
+            // Movements: average strength of the frequency
+            w_values.push(count)
+            m_values.push(Math.floor(sum/count))
+        }
+        //console.log(this.max_frequencies)
+        console.log(w_values)
+        console.log(m_values)
+        return {weights: w_values, moves: m_values}
     }
 }

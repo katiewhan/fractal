@@ -50,10 +50,13 @@ class App {
         this.shouldUpdateAudio = true
 
         setTimeout(() => {
-            const weights = this.audio.getFractalSeedInfo()
+            const par = this.audio.getFractalSeedInfo()
             let params = ''
-            for (let i = 0; i < weights.length; i++) {
-                params += `w${i}=${weights[i]}&`
+            for (let i = 0; i < par.weights.length; i++) {
+                params += `w${i}=${par.weights[i]}&`
+            }
+            for (let i = 0; i < par.moves.length; i++) {
+                params += `m${i}=${par.moves[i]}&`
             }
             // fetch(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/pub/MusicFractalBot?${params}`, {method:'GET', headers:{'x-api-key':'tRDEaRkO7aaWyzl67ZAV55UUkN0p1BfD8FEpkMkY'}}).then(res => res.blob()).then(data => {
             fetch(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`).then(res => res.blob()).then(data => {
