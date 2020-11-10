@@ -23,7 +23,8 @@ class Audio {
 
         // Allocate dataArray which will contain FFT data of audio
         this.bufferLength = this.audioAnalyser.frequencyBinCount
-        this.dataArray = new Uint8Array(this.bufferLength)
+        this.fDataArray = new Uint8Array(this.bufferLength)
+        this.tDataArray = new Uint8Array(this.bufferLength)
 
         this.fractalAnalysis = new AudioFractalAnalysis(this.audioContext.sampleRate)
     }
@@ -66,15 +67,13 @@ class Audio {
     }
 
     update = () => {
-//        this.audioAnalyser.getByteTimeDomainData(this.dataArray)
-        this.audioAnalyser.getByteFrequencyData(this.dataArray)
-        this.fractalAnalysis.updateFft(this.dataArray)
-
-        this.audioAnalyser.getByteTimeDomainData(this.dataArray)
+        this.audioAnalyser.getByteTimeDomainData(this.tDataArray)
+        this.audioAnalyser.getByteFrequencyData(this.fDataArray)
+        this.fractalAnalysis.updateFft(this.fDataArray)
     }
 
     setUpDebugViz = () => {
-        const WIDTH = 1200, HEIGHT = 200
+        this.WIDTH = 1200, this.HEIGHT = 200
         const canvas = document.getElementById('canvas')
         canvas.width = WIDTH
         canvas.height = HEIGHT
@@ -85,23 +84,23 @@ class Audio {
     updateDebugViz = () => {
         // FFT visualization to help developing
         ctx.fillStyle = 'rgb(200, 200, 200)';
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.fillRect(0, 0, this.WIDTH, this.HEIGHT);
 
         ctx.fillStyle = 'rgb(0, 100, 100)';
         ctx.beginPath();
 
         let x = 0
-        let xWidth = WIDTH / this.bufferLength
+        let xWidth = this.WIDTH / this.bufferLength
         for (let i = 0; i < this.bufferLength; i++) {
-            let value = this.dataArray[i] * (HEIGHT / 128.0)
+            let value = this.tDataArray[i] * (this.HEIGHT / 128.0)
 
-            ctx.fillRect(x, HEIGHT - (value / 2), xWidth, value)
+            ctx.fillRect(x, this.HEIGHT - (value / 2), xWidth, value)
             x += xWidth
         }
     }
 
-    getFractalSeedInfo = () => {
-        return this.fractalAnalysis.getParameters()
+    getFractalSeedInfo = (numParam) => {
+        return this.fractalAnalysis.getParameters(numParam)
     }
 }
 
@@ -140,7 +139,7 @@ class AudioFractalAnalysis {
 
     // Called when we are ready to make the call to generate fractal;
     // returns dictionary of parameters
-    getParameters() {
+    getParameters(numParam) {
         // Sort by decreasing frequency
         this.max_frequencies.sort(function(a, b) {
             return b.index - a.index;
@@ -150,8 +149,8 @@ class AudioFractalAnalysis {
         // What is the sum of their strengths/values?
         let w_values = []
         let m_values = []
-        const spacing = Math.floor(this.max_frequencies.length / 5)
-        for (let i = 0; i < 5; i++) {
+        const spacing = Math.floor(this.max_frequencies.length / numParam)
+        for (let i = 0; i < numParam; i++) {
             let count = 0
             let sum = 0
             let freq_index = this.max_frequencies[i*spacing].index

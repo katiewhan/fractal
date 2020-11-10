@@ -1,5 +1,6 @@
 // HELPERS with image data
 const imageDataWidth = 150, imageDataHeight = 150
+const numSpheres = 100
 
 function getImageData(image) {
     let canvas = document.createElement( 'canvas' );
@@ -29,7 +30,7 @@ function startWithUploadFile(event) {
 }
 
 function startWithMicrophone() {
-
+    console.log('starting with microphone')
 }
 
 class App {
@@ -43,14 +44,15 @@ class App {
     draw() {
         requestAnimationFrame(this.draw.bind(this))
         if (this.shouldUpdateAudio) this.audio.update()
-        if (this.shouldUpdateScene) this.scene.update(this.audio.dataArray)
+        if (this.shouldUpdateScene) this.scene.update(this.audio.fDataArray, this.audio.tDataArray)
     }
 
     loadFractal() {
         this.shouldUpdateAudio = true
+        this.shouldUpdateScene = true
 
         setTimeout(() => {
-            const par = this.audio.getFractalSeedInfo()
+            const par = this.audio.getFractalSeedInfo(5)
             let params = ''
             for (let i = 0; i < par.weights.length; i++) {
                 params += `w${i}=${par.weights[i]}&`
@@ -65,17 +67,19 @@ class App {
                     let imgData = getImageData(img)
                     URL.revokeObjectURL(img.src)
     
+                    this.scene.animateFractal = true
                     this.scene.setImageData(imgData)
-                    this.shouldUpdateScene = true
                 }
                 img.src = URL.createObjectURL(data)
             })
-        }, 8000)
+        }, 10000)
     }
 }
 
 class Scene {
     constructor() {
+        this.animateFractal = false
+
         this.scene = new THREE.Scene()
         this.camera = new THREE.PerspectiveCamera(/* FOV */ 75, window.innerWidth / window.innerHeight, /* near */ 0.1, /* far */ 1000)
         this.scene.add(this.camera)
@@ -86,24 +90,56 @@ class Scene {
 
         window.addEventListener('resize', this.onWindowResize)
 
-        this.addLight(0xB19CD9, 50, 20, 5)
-        this.addLight(0xFFA500, -50, 4, 10)
-        this.camera.position.set(imageDataWidth / 2, imageDataHeight / 2, 100)
+        this.currHue1 = 260.66
+        this.currSpeed1 = 0.02
+        this.changingColor1 = new THREE.Color()
+
+        this.currHue2 = 38.82
+        this.currSpeed2 = 0.03
+        this.changingColor2 = new THREE.Color()
+
+        this.changingLight1 = this.addLight(0xB19CD9, 50, 20, 5)
+        this.changingLight2 = this.addLight(0xFFA500, -50, 4, 10)
+        this.camera.position.set(0, 0, 100)
+
+        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement)
+        this.controls.target = new THREE.Vector3(0, 0, 0)
+        this.controls.zoomSpeed = 0.2
+        this.controls.rotateSpeed = 0.8
 
         this.spheres = []
+        this.originalSpheres = []
+        for (let i = 0; i < numSpheres; i++) {
+            this.addSphere(this.originalSpheres, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, Math.random() * 10)
+        }
+    }
+
+    getColor1 = () => {
+        if (this.currHue1 > 261 || this.currHue1 < 219) {
+            this.currSpeed1 *= -1
+        }
+        this.currHue1 += this.currSpeed1
+        this.changingColor1.setHSL(this.currHue1 / 360, 0.4453, 0.7314)
+        return this.changingColor1
+    }
+
+    getColor2 = () => {
+        if (this.currHue2 > 39 || this.currHue2 < 5) {
+            this.currSpeed2 *= -1
+        }
+        this.currHue2 += this.currSpeed2
+        this.changingColor2.setHSL(this.currHue2 / 360, 1.0, 0.5)
+        return this.changingColor2
     }
 
     setImageData = (imgData) => {
-        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement)
-        this.controls.target = new THREE.Vector3(imageDataWidth / 2, imageDataHeight / 2, 0)
-
         const fractalImageData = imgData
         for (let i = 0; i < imageDataWidth; i++) {
             for (let j = 0; j < imageDataHeight; j++) {
                 let colorValue = getPixel(fractalImageData, i, j).r
 
                 if (colorValue > 0) {
-                    this.addSphere(i, j, colorValue / 10)
+                    this.addSphere(this.spheres, i - (imageDataWidth / 2), j - (imageDataHeight / 2), colorValue / 10)
                 }
             }
         }
@@ -115,7 +151,7 @@ class Scene {
         this.renderer.setSize( window.innerWidth, window.innerHeight )
     }
 
-    addSphere = (x, y, z) => {
+    addSphere = (s, x, y, z) => {
         const geometry = new THREE.OctahedronBufferGeometry(1)
         const material = new THREE.MeshPhongMaterial( { color: 0xffcfdc, opacity: 0.05 * Math.abs(z), transparent: true } )
 
@@ -125,30 +161,63 @@ class Scene {
         sphere.position.set(x, y, z)
         sphere.rotation.set(Math.random() * 180, Math.random() * 180, Math.random() * 180)
 
-        this.spheres.push({ shape: sphere, x, y, z, randomSeed: Math.random() })
+        s.push({ shape: sphere, x, y, z, randomSeed: Math.random() })
     }
 
     addLight = (color, x, y, z) => {
         const light = new THREE.DirectionalLight(color, 1)
         light.position.set(x, y, z)
         this.scene.add(light)
+        return light
     }
 
-    update = (fft) => {
+    update = (fft, timeDomain) => {
+        if (this.animateFractal) {
+            for (let s = 0; s < this.originalSpheres.length; s++) {
+                const sphere = this.originalSpheres[s]
+                sphere.shape.position.x *= (sphere.randomSeed + 1.2)
+                sphere.shape.position.y *= (sphere.randomSeed + 1.2)
+                sphere.shape.position.z *= (sphere.randomSeed + 1.2)
+            }
+        }
+
         for (let s = 0; s < this.spheres.length; s++) {
             const sphere = this.spheres[s]
-            sphere.shape.rotation.x += 0.001 * sphere.randomSeed
-            sphere.shape.rotation.y += 0.003 * sphere.randomSeed
-            sphere.shape.rotation.z += 0.008 * sphere.randomSeed
+            sphere.shape.rotation.x += 0.01 * sphere.randomSeed
+            sphere.shape.rotation.y += 0.01 * sphere.randomSeed
+            sphere.shape.rotation.z += 0.01 * sphere.randomSeed
 
-            const index = Math.round(Math.atan2(sphere.x, sphere.y) * 200)
-            let value = fft[index]
-            if (this.prevFft) {
-                value = value * 0.01 + this.prevFft[index] * 0.99
+            if (this.animateFractal) {
+                const angle = Math.abs(Math.atan2(sphere.x, sphere.y) - Math.PI)
+                const index = Math.round((angle / Math.PI) * fft.length / 10)
+                let value = fft[index]
+                if (this.prevFft) {
+                    value = value * 0.01 + this.prevFft[index] * 0.99
+                }
+                sphere.shape.position.z = sphere.z * (value * 0.01 + 0.6)
             }
-            sphere.shape.position.z = sphere.z * value* 0.013
         }
         this.prevFft = fft
+
+        let total = 0
+        for (let d of timeDomain) {
+            total += d
+        }
+        if (this.prevTotal) {
+            if (total > this.prevTotal + 1) {
+                this.controls.dollyOut()
+                this.controls.rotateSpeed *= 0.99
+            }
+            if (total < this.prevTotal - 1) {
+                this.controls.dollyIn()
+                this.controls.rotateSpeed *= 1.002
+            }
+        }
+        this.prevTotal = total
+
+        this.changingLight1.color = this.getColor1()
+        this.changingLight2.color = this.getColor2()
+
         this.controls.update()
         this.renderer.render(this.scene, this.camera)
     }

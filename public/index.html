@@ -19,20 +19,25 @@
                 width: 70vw;
                 height: auto;
             }
-            #inputAudioButton {
+            #buttons {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: row;
+            }
+            .btn {
                 width: 200px;
-                height: 100px;
+                height: auto;
                 display: flex;
                 top: 60%;
+                padding: 0px 20px;
             }
-            #inputAudioImg {
+            .btnImg {
                 max-width: 100%;
                 max-height: 100%;
                 opacity: 0.5;
             }
-            #inputAudioImg:hover {
-                max-width: 100%;
-                max-height: 100%;
+            .btnImg:hover {
                 opacity: 1;
                 cursor: pointer;
             }
@@ -48,8 +53,11 @@
         <input type="file" id="inputAudio" accept="audio/*" onchange="startWithUploadFile(event)">
         <div id="page">
             <img id="title" src="static/DIMENSION.png">
-            <label for="inputAudio" id="inputAudioButton"><img id="inputAudioImg" src="static/UploadBtn.png"></label>
-            <!-- <img id="testImg" src="static/test.png"> -->
+            <div id="buttons">
+                <label for="inputAudio" class="btn"><img class="btnImg" src="static/UploadBtn.png"></label>
+                <label class="btn" onclick="startWithMicrophone()"><img class="btnImg" src="static/MicBtn.png"></label>
+            </div>
+
             <!-- <button id="playButton" role="switch"><span>Play/Pause</span></button> -->
             <!-- <canvas id="canvas"></canvas> -->
         </div>
