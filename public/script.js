@@ -1,5 +1,5 @@
 // HELPERS with image data
-const imageDataWidth = 150, imageDataHeight = 150
+const imageDataWidth = 200, imageDataHeight = 200
 const numSpheres = 100
 
 function getImageData(image) {
@@ -31,13 +31,16 @@ function startWithUploadFile(event) {
 
 function startWithMicrophone() {
     console.log('starting with microphone')
+    document.getElementById('page').style.display = 'none'
+    const app = new App(true)
+    app.draw()
 }
 
 class App {
-    constructor() {
+    constructor(useMic) {
         this.shouldUpdateAudio = false
         this.shouldUpdateScene = false
-        this.audio = new Audio(this.loadFractal.bind(this))
+        this.audio = new Audio(this.loadFractal.bind(this), useMic)
         this.scene = new Scene()
     }
 
@@ -67,7 +70,7 @@ class App {
                     let imgData = getImageData(img)
                     URL.revokeObjectURL(img.src)
     
-                    this.scene.animateFractal = true
+                    this.scene.startAnimation()
                     this.scene.setImageData(imgData)
                 }
                 img.src = URL.createObjectURL(data)
@@ -109,6 +112,7 @@ class Scene {
 
         this.spheres = []
         this.originalSpheres = []
+        this.chaos = 0
         for (let i = 0; i < numSpheres; i++) {
             this.addSphere(this.originalSpheres, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, Math.random() * 10)
         }
@@ -132,13 +136,18 @@ class Scene {
         return this.changingColor2
     }
 
+    startAnimation = () => {
+        this.animateFractal = true
+        this.controls.zoomSpeed = 0.05
+    }
+
     setImageData = (imgData) => {
         const fractalImageData = imgData
         for (let i = 0; i < imageDataWidth; i++) {
             for (let j = 0; j < imageDataHeight; j++) {
                 let colorValue = getPixel(fractalImageData, i, j).r
 
-                if (colorValue > 0) {
+                if (colorValue > 30) {
                     this.addSphere(this.spheres, i - (imageDataWidth / 2), j - (imageDataHeight / 2), colorValue / 10)
                 }
             }
@@ -153,7 +162,7 @@ class Scene {
 
     addSphere = (s, x, y, z) => {
         const geometry = new THREE.OctahedronBufferGeometry(1)
-        const material = new THREE.MeshPhongMaterial( { color: 0xffcfdc, opacity: 0.05 * Math.abs(z), transparent: true } )
+        const material = new THREE.MeshPhongMaterial( { color: 0xffcfdc, opacity: 0.08 * Math.abs(z), transparent: true } )
 
         const sphere = new THREE.Mesh( geometry, material )
         this.scene.add(sphere)
@@ -172,9 +181,13 @@ class Scene {
     }
 
     update = (fft, timeDomain) => {
-        if (this.animateFractal) {
-            for (let s = 0; s < this.originalSpheres.length; s++) {
-                const sphere = this.originalSpheres[s]
+        for (let s = 0; s < this.originalSpheres.length; s++) {
+            const sphere = this.originalSpheres[s]
+            sphere.shape.rotation.x += 0.01 * sphere.randomSeed
+            sphere.shape.rotation.y += 0.01 * sphere.randomSeed
+            sphere.shape.rotation.z += 0.01 * sphere.randomSeed
+
+            if (this.animateFractal) {
                 sphere.shape.position.x *= (sphere.randomSeed + 1.2)
                 sphere.shape.position.y *= (sphere.randomSeed + 1.2)
                 sphere.shape.position.z *= (sphere.randomSeed + 1.2)
@@ -195,25 +208,37 @@ class Scene {
                     value = value * 0.01 + this.prevFft[index] * 0.99
                 }
                 sphere.shape.position.z = sphere.z * (value * 0.01 + 0.6)
+
+                sphere.shape.position.x = sphere.x + this.chaos * (sphere.randomSeed + 0.5)
+                sphere.shape.position.y = sphere.y + this.chaos * (sphere.randomSeed + 0.5)
             }
         }
         this.prevFft = fft
-
+        if (this.chaos > 0) console.log(this.chaos)
         let total = 0
         for (let d of timeDomain) {
             total += d
         }
         if (this.prevTotal) {
-            if (total > this.prevTotal + 1) {
+            const newTotal = total * 0.1 + this.prevTotal * 0.9
+
+            const diff = Math.abs(newTotal - this.prevTotal) / this.prevTotal
+            this.chaos = diff * 0.1 + this.chaos * 0.9
+            this.chaos = Math.round(this.chaos * 100000) / 100000; 
+
+            if (newTotal > this.prevTotal) {
                 this.controls.dollyOut()
-                this.controls.rotateSpeed *= 0.99
+                this.controls.rotateSpeed *= 0.9
             }
-            if (total < this.prevTotal - 1) {
+            if (newTotal < this.prevTotal) {
                 this.controls.dollyIn()
-                this.controls.rotateSpeed *= 1.002
+                this.controls.rotateSpeed *= 1.01
             }
+            this.prevTotal = newTotal
+            // this.chaos = Math.max(0, this.chaos)
+        } else {
+            this.prevTotal = total
         }
-        this.prevTotal = total
 
         this.changingLight1.color = this.getColor1()
         this.changingLight2.color = this.getColor2()

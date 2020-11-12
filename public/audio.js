@@ -3,11 +3,11 @@ function hasGetUserMedia() {
 }
 
 class Audio {
-    constructor(loadFractal) {
+    constructor(loadFractal, useMic) {
         const AudioContext = window.AudioContext || window.webkitAudioContext
         this.audioContext = new AudioContext()
         this.audioAnalyser = this.audioContext.createAnalyser()
-        this.audioAnalyser.smoothingTimeConstant = 0.8 // should be not one to get FFT right
+        this.audioAnalyser.smoothingTimeConstant = 0.8 // should be not 1 to get FFT right
         
         // !! YOU CAN SET YOUR FFT SIZE VALUE LIKE THIS !!
         // must be a power of 2
@@ -17,9 +17,12 @@ class Audio {
         console.log(`Min decibel level: ${this.audioAnalyser.maxDecibels}`)
 
         const audioElement = document.getElementById('audioElement')
-        this.connectAudioSource(audioElement)
+        if (useMic) {
+            this.connectMicrophoneSource()
+        } else {
+            this.connectAudioSource(audioElement)
+        }
         loadFractal()
-        // this.connectMicrophoneSource()
 
         // Allocate dataArray which will contain FFT data of audio
         this.bufferLength = this.audioAnalyser.frequencyBinCount
@@ -34,7 +37,6 @@ class Audio {
             navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
                 console.log(stream)
                 const mediaStreamSource = this.audioContext.createMediaStreamSource(stream);
-                mediaStreamSource.connect(this.audioContext.destination)
                 mediaStreamSource.connect(this.audioAnalyser)
                 console.log('Microphone connected')
             })
