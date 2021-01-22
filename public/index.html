@@ -5,18 +5,62 @@
         <style>
 			body { margin: 0; }
             canvas { display: block; }
-            img { display: none; }
+            #page {
+                width: 100vw;
+                height: 100vh;
+                background-color: black;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+            }
+            #title {
+                display: flex;
+                width: 70vw;
+                height: auto;
+            }
+            #buttons {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: row;
+            }
+            .btn {
+                width: 200px;
+                height: auto;
+                display: flex;
+                top: 60%;
+                padding: 0px 20px;
+            }
+            .btnImg {
+                max-width: 100%;
+                max-height: 100%;
+                opacity: 0.5;
+            }
+            .btnImg:hover {
+                opacity: 1;
+                cursor: pointer;
+            }
+            #inputAudio {
+                display: none;
+            }
         </style>
     </head>
     <body>
         <script type="text/javascript" src="static/three.min.js"></script>
         <script type="text/javascript" src="static/orbitControls.js"></script>
-        <script type="text/javascript" src="static/dat.gui.min.js"></script>
-        <audio id="testAudio" src="static/sample.mp3"></audio>
-        <input type="file" id="inputAudio" accept="audio/*">
-        <!-- <img id="testImg" src="static/test.png"> -->
-        <button id="playButton" role="switch"><span>Play/Pause</span></button>
-        <!-- <canvas id="canvas"></canvas> -->
+        <audio id="audioElement"></audio>
+        <input type="file" id="inputAudio" accept="audio/*" onchange="startWithUploadFile(event)">
+        <div id="page">
+            <img id="title" src="static/DIMENSION.png">
+            <div id="buttons">
+                <label for="inputAudio" class="btn"><img class="btnImg" src="static/UploadBtn.png"></label>
+                <label class="btn" onclick="startWithMicrophone()"><img class="btnImg" src="static/MicBtn.png"></label>
+            </div>
+
+            <!-- <button id="playButton" role="switch"><span>Play/Pause</span></button> -->
+            <!-- <canvas id="canvas"></canvas> -->
+        </div>
         <script type="text/javascript" src="audio.js"></script>
         <script type="text/javascript" src="script.js"></script>
     </body>

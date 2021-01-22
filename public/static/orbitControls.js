@@ -120,6 +120,16 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 	};
 
+	this.dollyIn = function () {
+		dollyIn( getZoomScale() );
+		scope.update();
+	};
+	
+	this.dollyOut = function () {
+		dollyOut( getZoomScale() );
+		scope.update();
+	};
+
 	// this method is exposed, but perhaps it would be better if we can make it private...
 	this.update = function () {
 
