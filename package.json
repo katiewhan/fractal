@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "build": "tsc --noEmit && rm -rf ./.cache && parcel build --out-dir ./dist/public ./src/public/*.html",
-    "start": "node dist/server.js"
+    "start": "node ./dist/server.js"
   },
   "license": "ISC",
   "dependencies": {
