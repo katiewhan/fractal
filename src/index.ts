@@ -1,5 +1,7 @@
 import P5 from 'p5'
+
 import DimensionAudio from './audio'
+import Fractals from './fractals'
 import LSystem from './lsystem'
 import Particle from './particle'
 
@@ -7,6 +9,7 @@ enum SketchState {
     None,
     Listening,
     FadeOut,
+    LargeFractal,
     Fractal
 }
 
@@ -14,10 +17,12 @@ class App {
     private state: SketchState = SketchState.None
     private p5: P5
 
-    private generator?: LSystem
     private particles: Particle[]
     private audio?: DimensionAudio
+    private generator?: LSystem
     private fractalImage?: P5.Image
+
+    private fractalProgress: number = 0
 
     constructor(p5: P5) {
         this.p5 = p5
@@ -25,6 +30,7 @@ class App {
     
         this.p5.setup = () => {
             this.p5.createCanvas(window.innerWidth, window.innerHeight)
+            this.p5.imageMode(this.p5.CENTER)
         }
     
         this.p5.draw = () => {
@@ -35,11 +41,21 @@ class App {
                     this.drawParticles(this.audio)
                     break
                 case SketchState.FadeOut:
+                    this.p5.background(0, 20)
+                    break
+                case SketchState.LargeFractal:
                     this.p5.background(0, 30)
+                    if (!this.fractalImage) break
+                    const size = Math.min(window.innerWidth, window.innerHeight)
+                    this.p5.push()
+                    this.p5.tint(255, 50)
+                    this.p5.image(this.fractalImage, window.innerWidth / 2, window.innerHeight / 2, size, size)
+                    this.p5.pop()
                     break
                 case SketchState.Fractal:
                     this.p5.background(0, 100)
                     if (!this.generator) break
+                    const progress = this.fractalProgress / 5000
                     this.generator.generate((x, y, a) => {
                         if (!this.fractalImage) return
 
@@ -48,7 +64,9 @@ class App {
                         this.p5.rotate(a)
                         this.p5.image(this.fractalImage, 0, 0, 50, 50)
                         this.p5.pop()
-                    })
+                    }, progress)
+
+                    this.fractalProgress++
                     break
                 case SketchState.None:
                     this.p5.background(0)
@@ -70,28 +88,24 @@ class App {
             // Fade out particles
             this.state = SketchState.FadeOut
 
-            this.generator = new LSystem({
-                initialState: {
-                    x: 0,
-                    y: window.innerHeight,
-                    direction: -50
-                },
-                rules: { 
-                    'X': 'F+[[X]-X]-F[-FX]+X',
-                    'F': 'FF' 
-                },
-                axiom: 'X',
-                distance: 30,
-                angle: 30,
-                numIteration: 5
-            })
+            this.generator = new LSystem(Fractals.fractalPresets[Fractals.InstrumentType.Clarinet])
             this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
 
             setTimeout(() => {
-                this.state = SketchState.Fractal
+                this.state = SketchState.LargeFractal
+
+                setTimeout(() => {
+                    this.state = SketchState.FadeOut
+
+                    setTimeout(() => {
+                        this.state = SketchState.Fractal
+                    }, 3000)
+
+                }, 7000)
+
             }, 1000)
 
-        }, 5000)
+        }, 30000)
     }
 
     private createParticles() {

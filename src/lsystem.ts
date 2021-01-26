@@ -1,32 +1,15 @@
-interface LRules {
-    [key: string]: string
-}
-
-interface LState {
-    x: number
-    y: number
-    direction: number
-}
-
-interface LPreset {
-    initialState: LState
-    rules: LRules
-    axiom: string
-    distance: number
-    angle: number
-    numIteration: number
-}
+import Fractals from './fractals'
 
 class LSystem {
     private axiom: string
-    private rules: LRules
+    private rules: Fractals.LRules
     private distance: number
     private angle: number
-    private initialState: LState
+    private initialState: Fractals.LState
 
     private fullPath: string = ''
 
-    constructor(preset: LPreset) {
+    constructor(preset: Fractals.LPreset) {
         this.distance = preset.distance
         this.angle = preset.angle
         this.rules = preset.rules
@@ -54,11 +37,9 @@ class LSystem {
     }
 
     public generate(draw: (x: number, y: number, dir: number) => void, progress: number = 1, angleOffset: number = 0): void {
-        let states: LState[] = [{ x: this.initialState.x, y: this.initialState.y, direction: this.initialState.direction }]
+        let states: Fractals.LState[] = [{ x: this.initialState.x, y: this.initialState.y, direction: this.initialState.direction }]
 
         const pathLength = Math.floor(this.fullPath.length * progress)
-        console.log(pathLength)
-        console.log(this.fullPath.length)
 
         for (let i = 0; i < pathLength; i++) {
             let currentState = states[states.length - 1]
