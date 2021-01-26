@@ -8,19 +8,32 @@ interface LState {
     direction: number
 }
 
+interface LPreset {
+    initialState: LState
+    rules: LRules
+    axiom: string
+    distance: number
+    angle: number
+    numIteration: number
+}
+
 class LSystem {
     private axiom: string
     private rules: LRules
     private distance: number
     private angle: number
+    private initialState: LState
 
     private fullPath: string = ''
 
-    constructor() {
-        this.distance = 20
-        this.angle = 90
-        this.rules = { 'F' : 'FF+F+F+F+F+F-F' } //{ 'X': 'F+[[X]-X]-F[-FX]+X', 'F': 'FF' } //{ 'X': 'X+YF+', 'Y': '-FX-Y' }
-        this.axiom = 'F+F+F+F'
+    constructor(preset: LPreset) {
+        this.distance = preset.distance
+        this.angle = preset.angle
+        this.rules = preset.rules
+        this.axiom = preset.axiom
+        this.initialState = preset.initialState
+
+        this.iterate(preset.numIteration)
     }
 
     public iterate(iterations: number): void {
@@ -40,40 +53,31 @@ class LSystem {
         this.fullPath = current
     }
 
-    public generate(draw: (x: number, y: number, dir: number) => void): void {
-        let states: LState[] = [{ x: 600, y: 0, direction: 0 }]
+    public generate(draw: (x: number, y: number, dir: number) => void, progress: number = 1, angleOffset: number = 0): void {
+        let states: LState[] = [{ x: this.initialState.x, y: this.initialState.y, direction: this.initialState.direction }]
 
-        for (let p of this.fullPath) {
+        const pathLength = Math.floor(this.fullPath.length * progress)
+        console.log(pathLength)
+        console.log(this.fullPath.length)
+
+        for (let i = 0; i < pathLength; i++) {
             let currentState = states[states.length - 1]
 
-            switch (p) {
+            switch (this.fullPath[i]) {
                 case 'F':
                     let directionRad = currentState.direction * Math.PI / 180
                     currentState.x += this.distance * Math.cos(directionRad)
                     currentState.y += this.distance * Math.sin(directionRad)
 
                     draw(currentState.x, currentState.y, directionRad)
-                    // console.log(states)
-                    // this.ctx.beginPath();
-                    // this.ctx.strokeStyle = "red";
-                    // this.ctx.save()
-                    // this.ctx.translate(currentState.x, currentState.y)
-                    // this.ctx.rotate(directionRad)
-                    // // this.ctx.rect(0, 0, 50, 50)
-                    // // this.ctx.stroke();
-                    // this.ctx.drawImage(this.image, 0, 0, 30, 30)
-                    // this.ctx.restore()
-
-                    // this.app.scene.addImage(currentState.x, currentState.y, directionRad)
-
                     break
                 case 'f':
                     break
                 case '+':
-                    currentState.direction += this.angle
+                    currentState.direction += this.angle + angleOffset
                     break
                 case '-':
-                    currentState.direction -= this.angle
+                    currentState.direction -= this.angle + angleOffset
                     break
                 case '[':
                     states.push({ x: currentState.x, y: currentState.y, direction: currentState.direction })

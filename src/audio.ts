@@ -72,20 +72,6 @@ class DimensionAudio {
 
         this.audioContext.resume()
         audioElement.play()
-
-        // this.isAudioPlaying = false
-        // document.getElementById('playButton').addEventListener('click', () => {
-        //     if (this.audioContext.state == 'suspended') {
-        //         this.audioContext.resume()
-        //     }
-
-        //     if (this.isAudioPlaying) {
-        //         audioElement.pause()
-        //     } else {
-        //         audioElement.play()
-        //     }
-        //     this.isAudioPlaying = !this.isAudioPlaying
-        // })
     }
 
     public update() {

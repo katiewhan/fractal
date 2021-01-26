@@ -14,20 +14,14 @@ class App {
     private state: SketchState = SketchState.None
     private p5: P5
 
-    private generator: LSystem
+    private generator?: LSystem
     private particles: Particle[]
     private audio?: DimensionAudio
     private fractalImage?: P5.Image
 
     constructor(p5: P5) {
         this.p5 = p5
-
-        this.generator = new LSystem()
         this.particles = []
-
-        this.p5.preload = () => {
-            this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
-        }
     
         this.p5.setup = () => {
             this.p5.createCanvas(window.innerWidth, window.innerHeight)
@@ -36,29 +30,29 @@ class App {
         this.p5.draw = () => {
             switch (this.state) {
                 case SketchState.Listening:
-                    this.p5.background(0, 100)
-
                     if (!this.audio) break
-
                     this.audio.update()
-                    const audioValue = Math.min(Math.max(0, this.audio.getVolume() - 127.5) / 20, 1)
-                    for (let particle of this.particles) {
-                        particle.moveParticle(audioValue)
-                        particle.draw()
-                    }
+                    this.drawParticles(this.audio)
                     break
                 case SketchState.FadeOut:
                     this.p5.background(0, 30)
                     break
                 case SketchState.Fractal:
                     this.p5.background(0, 100)
-                    // this.generator.generate((x, y, dir) => {
-                        if (this.fractalImage)
-                            this.p5.image(this.fractalImage, 0, 0, 1000, 1000)
-                    // })
+                    if (!this.generator) break
+                    this.generator.generate((x, y, a) => {
+                        if (!this.fractalImage) return
+
+                        this.p5.push()
+                        this.p5.translate(x, y)
+                        this.p5.rotate(a)
+                        this.p5.image(this.fractalImage, 0, 0, 50, 50)
+                        this.p5.pop()
+                    })
                     break
                 case SketchState.None:
                     this.p5.background(0)
+                    break
             }
         }
     
@@ -76,12 +70,28 @@ class App {
             // Fade out particles
             this.state = SketchState.FadeOut
 
+            this.generator = new LSystem({
+                initialState: {
+                    x: 0,
+                    y: window.innerHeight,
+                    direction: -50
+                },
+                rules: { 
+                    'X': 'F+[[X]-X]-F[-FX]+X',
+                    'F': 'FF' 
+                },
+                axiom: 'X',
+                distance: 30,
+                angle: 30,
+                numIteration: 5
+            })
+            this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
+
             setTimeout(() => {
-                // this.generator.iterate(3)
                 this.state = SketchState.Fractal
             }, 1000)
 
-        }, 30000)
+        }, 5000)
     }
 
     private createParticles() {
@@ -89,14 +99,24 @@ class App {
             this.particles.push(new Particle(this.p5, window.innerWidth, window.innerHeight))
         }
     }
+
+    private drawParticles(audio: DimensionAudio) {
+        this.p5.background(0, 100)
+        const audioValue = Math.min(Math.max(0, audio.getVolume() - 127.5) / 20, 1)
+        for (let particle of this.particles) {
+            particle.moveParticle(audioValue)
+            particle.draw()
+        }
+    }
 }
 
-// Start the P5 application
+// Set up the P5 application
 let app: App
 new P5((p5) => {
     app = new App(p5)
 })
 
+// Button handler to start the experience
 const startButton = document.getElementById('startButton')
 if (startButton) {
     startButton.onclick = () => {
