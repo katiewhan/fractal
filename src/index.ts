@@ -5,6 +5,10 @@ import Fractals from './fractals'
 import LSystem from './lsystem'
 import Particle from './particle'
 
+function delay(time: number) {
+    return new Promise((resolve) => { setTimeout(resolve, time) })
+}
+
 enum SketchState {
     None,
     Listening,
@@ -14,14 +18,13 @@ enum SketchState {
 }
 
 class App {
-    private state: SketchState = SketchState.None
     private p5: P5
-
     private particles: Particle[]
     private audio?: DimensionAudio
     private generator?: LSystem
     private fractalImage?: P5.Image
 
+    private state: SketchState = SketchState.None
     private fractalProgress: number = 0
 
     constructor(p5: P5) {
@@ -34,28 +37,25 @@ class App {
         }
     
         this.p5.draw = () => {
+            if (this.audio) this.audio.update()
+
             switch (this.state) {
                 case SketchState.Listening:
                     if (!this.audio) break
-                    this.audio.update()
                     this.drawParticles(this.audio)
                     break
                 case SketchState.FadeOut:
                     this.p5.background(0, 20)
                     break
                 case SketchState.LargeFractal:
-                    this.p5.background(0, 30)
                     if (!this.fractalImage) break
-                    const size = Math.min(window.innerWidth, window.innerHeight)
-                    this.p5.push()
-                    this.p5.tint(255, 50)
-                    this.p5.image(this.fractalImage, window.innerWidth / 2, window.innerHeight / 2, size, size)
-                    this.p5.pop()
+                    this.drawLargeFractal(this.fractalImage)
                     break
                 case SketchState.Fractal:
                     this.p5.background(0, 100)
                     if (!this.generator) break
                     const progress = this.fractalProgress / 5000
+                    const angle = this.p5.noise(progress * 10) * 20
                     this.generator.generate((x, y, a) => {
                         if (!this.fractalImage) return
 
@@ -64,7 +64,7 @@ class App {
                         this.p5.rotate(a)
                         this.p5.image(this.fractalImage, 0, 0, 50, 50)
                         this.p5.pop()
-                    }, progress)
+                    }, progress, angle)
 
                     this.fractalProgress++
                     break
@@ -84,28 +84,21 @@ class App {
         this.audio = new DimensionAudio()
         this.createParticles()
 
-        setTimeout(() => {
+        delay(3000).then(() => {
             // Fade out particles
             this.state = SketchState.FadeOut
 
+            // TODO: get fractal type and image from audio
             this.generator = new LSystem(Fractals.fractalPresets[Fractals.InstrumentType.Clarinet])
             this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
 
-            setTimeout(() => {
-                this.state = SketchState.LargeFractal
-
-                setTimeout(() => {
-                    this.state = SketchState.FadeOut
-
-                    setTimeout(() => {
-                        this.state = SketchState.Fractal
-                    }, 3000)
-
-                }, 7000)
-
-            }, 1000)
-
-        }, 30000)
+        }).then(() => delay(1000)).then(() => {
+            this.state = SketchState.LargeFractal
+        }).then(() => delay(8000)).then(() => {
+            this.state = SketchState.FadeOut
+        }).then(() => delay(2000)).then(() => {
+            this.state = SketchState.Fractal
+        })
     }
 
     private createParticles() {
@@ -121,6 +114,15 @@ class App {
             particle.moveParticle(audioValue)
             particle.draw()
         }
+    }
+
+    private drawLargeFractal(fractalImage: P5.Image) {
+        this.p5.background(0, 30)
+        const size = Math.min(window.innerWidth, window.innerHeight)
+        this.p5.push()
+        this.p5.tint(255, 50)
+        this.p5.image(fractalImage, window.innerWidth / 2, window.innerHeight / 2, size, size)
+        this.p5.pop()
     }
 }
 

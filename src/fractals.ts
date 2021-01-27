@@ -42,7 +42,7 @@ namespace Fractals {
         [InstrumentType.Clarinet]: {
             initialState: {
                 x: 0,
-                y: window.innerHeight,
+                y: window.innerHeight + 150,
                 direction: -50
             },
             rules: { 

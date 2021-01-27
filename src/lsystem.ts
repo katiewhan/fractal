@@ -55,10 +55,10 @@ class LSystem {
                 case 'f':
                     break
                 case '+':
-                    currentState.direction += this.angle + angleOffset
+                    currentState.direction += (this.angle + angleOffset)
                     break
                 case '-':
-                    currentState.direction -= this.angle + angleOffset
+                    currentState.direction -= (this.angle + angleOffset)
                     break
                 case '[':
                     states.push({ x: currentState.x, y: currentState.y, direction: currentState.direction })
