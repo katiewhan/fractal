@@ -14,7 +14,7 @@ class Audio {
         this.audioAnalyser.fftSize = 4096
         console.log(`FFT size: ${this.audioAnalyser.fftSize}`)
         console.log(`Min decibel level: ${this.audioAnalyser.minDecibels}`)
-        console.log(`Min decibel level: ${this.audioAnalyser.maxDecibels}`)
+        console.log(`Max decibel level: ${this.audioAnalyser.maxDecibels}`)
         console.log(`Sample rate: ${this.audioContext.sampleRate}`)
 
         const audioElement = document.getElementById('audioElement')
@@ -26,8 +26,10 @@ class Audio {
         loadFractal()
 
         // Allocate dataArray which will contain FFT data of audio
+        // TODO: consider making frequency data float
         this.bufferLength = this.audioAnalyser.frequencyBinCount
         this.fDataArray = new Uint8Array(this.bufferLength)
+//        this.fDataArray = new Float32Array(this.bufferLength)
         this.tDataArray = new Uint8Array(this.bufferLength)
 
         this.fractalAnalysis = new AudioFractalAnalysis(this.audioContext.sampleRate)
@@ -181,9 +183,9 @@ class AudioFractalAnalysis {
                 break
             }
         }
-        console.log(w_values)
-        console.log(m_values)
-        console.log(this.allFftData.length)
+        console.log(`Weights: ${w_values}`)
+        console.log(`Moves: ${m_values}`)
+        console.log(`Number of analysis steps: ${this.allFftData.length}`)
         //for (let i = 0; i < this.allFftData.length; i++) {
         //    console.log(this.allFftData[i])
         //}
