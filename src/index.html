@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Online Fractals Prototype</title>
+        <style>
+			html, body { 
+                margin: 0;
+                height: 100%;
+                width: 100%
+            }
+            canvas { 
+                display: block; 
+            }
+            #page {
+                width: 100%;
+                height: 100%;
+                background-color: black;
+                position: absolute;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+            }
+            #title {
+                display: flex;
+                width: 70vw;
+                height: auto;
+            }
+            #buttons {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: row;
+            }
+            .btnImg {
+                width: 200px;
+                height: auto;
+                display: flex;
+                top: 60%;
+                padding: 0px 20px;
+                opacity: 0.5;
+            }
+            .btnImg:hover {
+                opacity: 1;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript" src="static/p5.min.js"></script>
+        <!-- <audio id="audioElement"></audio>
+        <input type="file" id="inputAudio" accept="audio/*" onchange="startWithUploadFile(event)"> -->
+        <div id="page">
+            <img id="title" src="static/DIMENSION.png">
+            <div id="buttons">
+                <!-- <label for="inputAudio" class="btn"><img class="btnImg" src="static/UploadBtn.png"></label> -->
+                <img class="btnImg" id="startButton" src="static/StartButton.png">
+            </div>
+        </div>
+        <script type="text/javascript" src="index.ts"></script>
+    </body>
+</html>
