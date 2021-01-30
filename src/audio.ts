@@ -101,6 +101,9 @@ class DimensionAudio {
 class AudioFractalAnalysis {
     private freq: number[]
     private maxFrequencies: MaxFrequency[]
+    private classifier_weights: number[][]
+    private class_scores: number[]
+    private feature_offset: number
     private sampleRate: number
 
     constructor(sampleRate: number) {
@@ -111,13 +114,34 @@ class AudioFractalAnalysis {
             293.67, 261.63, 233.08, 220, 196, 174.61, 164.81, 146.83, 130.81,
             116.54, 110, 97.999, 87.307, 65.406, 73.416, 58.27
         ]
-        // Keep track of the max frequencies at each step,
-        // as well as the ENTIRE FFT data arrays
+        // Keep track of the max frequencies at each step
         this.maxFrequencies = []
-        this.allFftData = []
+        //this.allFftData = []
+        this.classifier_weights = this.get_classifier_parameters()
+        this.class_scores = new Array(this.classifier_weights.length).fill(0)
+        this.feature_offset = 0
         // Resolution in frequency domain is sample rate divided by (time domain)
         // data length (time domain data length = twice fft length)
         this.sampleRate = sampleRate
+    }
+
+    public get_classifier_parameters() {
+        // Read a matrix from a CSV
+        const fs = require('fs')
+        let all = fs.readFileSync('dist/weights_test.csv', 'utf8')
+        all = all.trim();  // final crlf in file
+        let lines = all.split("\n")
+        let m = lines.length
+        //let n = lines[0].split(",").length
+        let weights = []
+        for (let i = 0; i < m; i++) {
+            let tokens = lines[i].split(",")
+            weights[i] = new Array(tokens.length)
+            for (let j = 0; j < tokens.length; ++j) {
+                weights[i][j] = parseFloat(tokens[j])
+            }
+        }
+        return weights
     }
 
     // Called every frame with fftArray containing FFT data
@@ -130,10 +154,16 @@ class AudioFractalAnalysis {
                 max_val = Math.abs(fftArray[i])
                 max_index = i
             }
+            // Accumulate class scores
+            // TODO: Once we run out of weights predict the class
+            for (let j=0; j < this.class_scores.length; j++) {
+                this.class_scores[j] += fftArray[i] * this.classifier_weights[j][this.feature_offset + i]
+            }
         }
+        this.feature_offset += fftArray.length
         this.maxFrequencies.push( {index: max_index, value: max_val} )
         // copy fft data
-        this.allFftData.push(fftArray.slice(0))
+        //this.allFftData.push(fftArray.slice(0))
         //console.log(`Data length: ${fftArray.length}`)
         //console.log(`Max frequency index: ${max_index}`)
     }
@@ -178,7 +208,7 @@ class AudioFractalAnalysis {
         }
         console.log(`Weights: ${w_values}`)
         console.log(`Moves: ${m_values}`)
-        console.log(`Number of analysis steps: ${this.allFftData.length}`)
+        console.log(`Number of analysis steps: ${this.maxFrequencies.length}`)
         return {weights: w_values, moves: m_values}
     }
 }
