@@ -12,6 +12,7 @@ function delay(time: number) {
 enum SketchState {
     None,
     Listening,
+    Particles,
     FadeOut,
     LargeFractal,
     Fractal,
@@ -40,6 +41,9 @@ class App {
         this.p5.setup = () => {
             this.p5.createCanvas(window.innerWidth, window.innerHeight, this.p5.WEBGL)
             this.p5.imageMode(this.p5.CENTER)
+            this.p5.rectMode(this.p5.CENTER)
+            this.p5.noStroke()
+
             this.p5.frameRate(24)
 
             // Disable depth test to render elements in order of draw
@@ -56,19 +60,20 @@ class App {
 
             switch (this.state) {
                 case SketchState.Listening:
-                    if (!this.audio) break
-                    this.drawParticles(this.audio)
+                    if (this.audio && this.audio.getOnsetDetected()) this.drawDots()
                     break
-                case SketchState.FadeOut:
-                    this.p5.background(0, 20)
+                case SketchState.Particles:
+                    if (this.audio) this.drawParticles(this.audio)
                     break
                 case SketchState.LargeFractal:
-                    if (!this.fractalImage) break
-                    this.drawLargeFractal(this.fractalImage)
+                    if (this.fractalImage) this.drawLargeFractal(this.fractalImage)
                     break
                 case SketchState.Fractal:
                     if (!this.audio || !this.generator) break
                     this.drawFractals(this.audio, this.generator)
+                    break
+                case SketchState.FadeOut:
+                    this.p5.background(0, 20)
                     break
                 case SketchState.Shader:
                     if (!this.shader || !this.audio || !this.generator) break
@@ -108,26 +113,24 @@ class App {
 
     public start() {
         this.state = SketchState.Listening
-        this.audio = new DimensionAudio()
-        this.createParticles() //3, 5)
-        // this.generator = new LSystem(Fractals.fractalPresets[Fractals.InstrumentType.Clarinet])
-        // this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
-
-        delay(35000).then(() => {
-            // Fade out particles
+        this.audio = new DimensionAudio((type: Fractals.InstrumentType, seed: DimensionAudio.SeedParameters) => {
+            this.createParticles()
             this.state = SketchState.LargeFractal
-
-            // TODO: get fractal type and image from audio
             this.generator = new LSystem(Fractals.fractalPresets[Fractals.InstrumentType.Clarinet])
-            this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
 
-        }).then(() => delay(0)).then(() => {
-            // this.state = SketchState.LargeFractal
-        }).then(() => delay(8000)).then(() => {
-            this.state = SketchState.Fractal
-        }).then(() => delay(2000)).then(() => {
-            // this.state = SketchState.Fractal
+            let params = ''
+            for (let i = 0; i < seed.weights.length; i++) {
+                params += `w${i}=${seed.weights[i]}&`
+            }
+            for (let i = 0; i < seed.moves.length; i++) {
+                params += `m${i}=${seed.moves[i]}&`
+            }
+            this.fractalImage = this.p5.loadImage(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`)
         })
+
+        // delay(0).then(() => {
+        // }).then(() => delay(0)).then(() => {
+        // })
     }
 
     private createParticles(numParticles: number = window.innerWidth / 5, speedFactor: number = 1) {
@@ -145,8 +148,22 @@ class App {
         }
     }
 
+    private drawDots() {
+        this.p5.background(0)
+        this.p5.fill(200)
+
+        let angle = this.p5.frameCount * 0.2
+        for (let x = -1; x < 2; x++) {
+            this.p5.push()
+            this.p5.translate(x * 40, Math.sin(angle + x) * 10)
+            this.p5.rotate(angle + x)
+            this.p5.rect(0, 0, 15, 15)
+            this.p5.pop()
+        }
+    }
+
     private drawLargeFractal(fractalImage: P5.Image) {
-        this.p5.background(0) //, 30)
+        this.p5.background(0)
         const size = Math.min(window.innerWidth, window.innerHeight)
         this.p5.push()
         // this.p5.tint(255, 50)

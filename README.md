@@ -22,9 +22,3 @@ npm run build
 npm run deploy
 ```
 This will publish the build files to the `gh-pages` branch for GitHub Pages to host the site. The deployed site is currently available at [katiewhan.github.io/fractalWeb](https://katiewhan.github.io/fractalWeb/).
-
-### To add an asset:
-First, if you have not already, follow steps "To build and test" to get the site up locally. You should now see a folder called `dist` locally, next to `src`. Copy and paste the asset file inside `dist`, and refer to it by its name in code. For example, if you have a file `dist/foo.txt`, you can read it like so:
-```
-fs.readFileSync('foo.txt')
-``` 

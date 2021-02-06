@@ -1,5 +1,7 @@
 import { readFileSync } from 'fs'
 
+import Fractals from './fractals'
+
 function hasGetUserMedia() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
 }
@@ -26,11 +28,6 @@ declare global {
     }
 }
 
-interface MaxFrequency {
-    index: number
-    value: number
-}
-
 class DimensionAudio {
     public bufferLength: number
     public fDataArray: Float32Array
@@ -45,7 +42,7 @@ class DimensionAudio {
     private onsetThreshold: number = this.minOnsetThreshold
     private onsetDetected: boolean = false
 
-    constructor(useMic: boolean = true) {
+    constructor(private generateFractal: (type: Fractals.InstrumentType, seed: DimensionAudio.SeedParameters) => void, useMic: boolean = true) {
         const AudioContext = window.AudioContext || window.webkitAudioContext
         this.audioContext = new AudioContext()
         this.audioAnalyser = this.audioContext.createAnalyser()
@@ -125,7 +122,8 @@ class DimensionAudio {
             this.onsetThreshold = this.onsetThreshold * 0.05 + this.minOnsetThreshold * 0.95
             if (volume > this.onsetThreshold) {
                 this.onsetDetected = true
-                // console.log('onset detected')
+                console.log('Onset detected')
+                this.triggerFractalGeneration()
             }
             this.onsetThreshold = volume
         }
@@ -135,15 +133,27 @@ class DimensionAudio {
         return this.smoothedVolume
     }
 
+    public getOnsetDetected() {
+        return this.onsetDetected
+    }
+
     public getFractalSeedInfo(numParam: number) {
         return this.fractalAnalysis.getParameters(numParam)
+    }
+
+    private triggerFractalGeneration() {
+        // Wait 45 seconds from first detection of sound to show fractal visuals
+        setTimeout(() => {
+            // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
+            this.generateFractal(Fractals.InstrumentType.Clarinet, this.getFractalSeedInfo(5))
+        }, 45000)
     }
 }
 
 class AudioFractalAnalysis {
     private freq: number[]
     private classes: string[]
-    private maxFrequencies: MaxFrequency[]
+    private maxFrequencies: DimensionAudio.MaxFrequency[]
     private classifier_weights: number[][]
     private class_scores: number[]
     private feature_offset: number
@@ -291,6 +301,18 @@ class AudioFractalAnalysis {
         console.log(`Number of analysis steps: ${this.maxFrequencies.length}`)
         // TODO: memory clean-up?
         return {weights: w_values, moves: m_values}
+    }
+}
+
+namespace DimensionAudio {
+    export interface MaxFrequency {
+        index: number
+        value: number
+    }
+
+    export interface SeedParameters {
+        weights: number[]
+        moves: number[]
     }
 }
 
