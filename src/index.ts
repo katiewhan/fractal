@@ -81,12 +81,10 @@ class App {
                     if (this.audio && this.fractalImage) this.drawParticles(this.audio, this.fractalImage)
                     break
                 case SketchState.LargeFractal:
-                    if (this.fractalImage) 
-                        this.drawLargeFractal(this.fractalImage)
+                    if (this.fractalImage) this.drawLargeFractal(this.fractalImage)
                     break
                 case SketchState.Fractal:
-                    if (!this.audio || !this.generator) break
-                    this.drawFractals(this.audio, this.generator)
+                    if (this.audio && this.fractalImage && this.generator) this.drawFractals(this.audio, this.fractalImage, this.generator)
                     break
                 case SketchState.Shader:
                     if (this.backgroundShader) this.drawBackground(this.backgroundShader)
@@ -163,7 +161,6 @@ class App {
 
     private drawBackground(shader: P5.Shader) {
         for (let particle of this.backgroundParticles) {
-            // TODO: experiment with volume?
             particle.moveParticle(0)
         }
 
@@ -187,6 +184,7 @@ class App {
     private drawLargeFractal(fractalImage: P5.Image) {        
         const preProgress = Math.min(this.fractalProgress, 85) * 3
         const postProgress = Math.max(this.fractalProgress - 240, 0)
+        const alpha = Math.max(255 - postProgress, 0)
 
         // Draw image fading in as texture
         // if (preProgress < 256) {
@@ -195,14 +193,11 @@ class App {
         //     graphics.image(fractalImage, 0, 0, graphics.width, graphics.height)
         // }
 
-        let size = Math.min(window.innerWidth, window.innerHeight)
-        size -= postProgress * 10
-
         this.p5.push()
-        this.p5.tint(255, Math.min(preProgress, size / 2))
+        this.p5.tint(255, Math.min(preProgress, alpha))
 
         // Transition to next state
-        if (size < 0) {
+        if (alpha == 0) {
             this.p5.pop()
 
             this.state = SketchState.Particles
@@ -212,26 +207,23 @@ class App {
             this.createParticles(this.backgroundParticles, 3, 5)
             this.createParticles(this.particles)
         } else {
+            let size = Math.min(window.innerWidth, window.innerHeight)
+            size += (postProgress * postProgress) / 8
             this.p5.image(fractalImage, 0, 0, size, size)
             this.p5.pop()
             this.fractalProgress++
         }
     }
 
-    private drawFractals(audio: DimensionAudio, generator: LSystem) {
+    private drawFractals(audio: DimensionAudio, fractalImage: P5.Image, generator: LSystem) {
         const progress = this.fractalProgress / 5000
         const audioValue = audio.getVolume()
         const angle = audioValue * 20 //this.p5.noise(progress * 10) * 20
         generator.generate((x, y, a, i) => {
-            if (!this.fractalImage) return
-
             this.p5.push()
             this.p5.translate(x, y)
             this.p5.rotate(a + 2 * this.p5.noise(i + 10, progress * angle))
-            // this.p5.texture(this.fractalImage);
-            // this.p5.plane(50, 50);
-            // this.p5.tint('brown')
-            this.p5.image(this.fractalImage, 0, 0, 50 + 10 * this.p5.noise(i + 10, progress * angle), 50 + 10 * this.p5.noise(i + 10, progress * angle))
+            this.p5.image(fractalImage, 0, 0, 50 + 10 * this.p5.noise(i + 10, progress * angle), 50 + 10 * this.p5.noise(i + 10, progress * angle))
             this.p5.pop()
         }, progress, angle, this.p5.noise)
 
