@@ -11,6 +11,7 @@ uniform vec3 color0;
 uniform vec3 color1;
 uniform vec3 color2;
 
+uniform float alpha;
 uniform vec2 u_resolution;
 
 void main() {
@@ -19,5 +20,5 @@ void main() {
     color = mix(color1, color, distance(gl_FragCoord.xy, cell1) / length(u_resolution));
     color = mix(color2, color, distance(gl_FragCoord.xy, cell2) / length(u_resolution));
 
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, alpha);
 }

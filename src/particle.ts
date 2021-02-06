@@ -32,8 +32,8 @@ class Particle {
         if (this.position.y < (- this.p5.height / 2) || this.position.y > this.p5.height / 2)
             this.speed.y *= -1
 
-        const xDelta = - this.position.x //(this.p5.width / 2) - this.position.x
-        const yDelta = - this.position.y // (this.p5.height / 2) - this.position.y
+        const xDelta = - this.position.x
+        const yDelta = - this.position.y
         const xRandomNoise = noise * this.p5.randomGaussian(0, 1)
         const yRandomNoise = noise * this.p5.randomGaussian(0, 1)
 

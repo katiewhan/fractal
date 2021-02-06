@@ -146,7 +146,7 @@ class DimensionAudio {
         setTimeout(() => {
             // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
             this.generateFractal(Fractals.InstrumentType.Clarinet, this.getFractalSeedInfo(5))
-        }, 45000)
+        }, 5000)
     }
 }
 
