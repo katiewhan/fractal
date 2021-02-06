@@ -1,4 +1,5 @@
 import P5 from 'p5'
+import { readFileSync } from 'fs'
 
 import DimensionAudio from './audio'
 import Fractals from './fractals'
@@ -34,10 +35,6 @@ class App {
         this.p5 = p5
         this.particles = []
 
-        this.p5.preload = () => {
-            this.shader = this.p5.loadShader('shader.vert', 'shader.frag');
-        }
-    
         this.p5.setup = () => {
             this.p5.createCanvas(window.innerWidth, window.innerHeight, this.p5.WEBGL)
             this.p5.imageMode(this.p5.CENTER)
@@ -53,6 +50,11 @@ class App {
                 gl.disable(gl.DEPTH_TEST)
                 gl.enable(gl.BLEND)
             }
+
+            // Set up shader
+            const vert = readFileSync(__dirname + '/static/shader.vert', 'utf8')
+            const frag = readFileSync(__dirname + '/static/shader.frag', 'utf8')
+            this.shader = this.p5.createShader(vert, frag);
         }
     
         this.p5.draw = () => {
@@ -76,7 +78,7 @@ class App {
                     this.p5.background(0, 20)
                     break
                 case SketchState.Shader:
-                    if (!this.shader || !this.audio || !this.generator) break
+                    if (!this.shader || !this.audio) break
 
                     const audioValue = this.audio.getVolume()
                     for (let particle of this.particles) {
@@ -97,7 +99,7 @@ class App {
                     this.p5.shader(this.shader)
                     this.p5.rect(0, 0, window.innerWidth, window.innerHeight)
 
-                    this.drawFractals(this.audio, this.generator)
+                    // this.drawFractals(this.audio, this.generator)
 
                     break
                 case SketchState.None:
