@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs'
+
 function hasGetUserMedia() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
 }
@@ -31,14 +33,17 @@ interface MaxFrequency {
 
 class DimensionAudio {
     public bufferLength: number
-    public fDataArray: Uint8Array
-    public tDataArray: Uint8Array
+    public fDataArray: Float32Array
+    public tDataArray: Float32Array
 
     private audioContext: AudioContext
     private audioAnalyser: AnalyserNode
     private fractalAnalysis: AudioFractalAnalysis
 
     private smoothedVolume: number = 0
+    private minOnsetThreshold: number = 0.1
+    private onsetThreshold: number = this.minOnsetThreshold
+    private onsetDetected: boolean = false
 
     constructor(useMic: boolean = true) {
         const AudioContext = window.AudioContext || window.webkitAudioContext
@@ -68,9 +73,8 @@ class DimensionAudio {
 
         // Allocate dataArray which will contain FFT data of audio
         this.bufferLength = this.audioAnalyser.frequencyBinCount
-        this.fDataArray = new Uint8Array(this.bufferLength)
-//        this.fDataArray = new Float32Array(this.bufferLength)
-        this.tDataArray = new Uint8Array(this.bufferLength)
+        this.fDataArray = new Float32Array(this.bufferLength)
+        this.tDataArray = new Float32Array(this.bufferLength)
 
         this.fractalAnalysis = new AudioFractalAnalysis(this.audioContext.sampleRate)
     }
@@ -102,18 +106,32 @@ class DimensionAudio {
         // and in particular run the fractalAnalysis update
         // SMH: while part of me thinks that the float frequency data should be
         // easier to use, I can't get it to work....
-        this.audioAnalyser.getByteTimeDomainData(this.tDataArray)
-        this.audioAnalyser.getByteFrequencyData(this.fDataArray)
+        this.audioAnalyser.getFloatTimeDomainData(this.tDataArray)
+        this.audioAnalyser.getFloatFrequencyData(this.fDataArray)
         this.fractalAnalysis.updateFft(this.fDataArray)
-    }
 
-    public getVolume() {
+        // Calculate volume with smoothing
         let volume = 0
         for (let i = 0; i < this.bufferLength; i++) {
             volume += this.tDataArray[i] * this.tDataArray[i]
         }
         volume /= this.bufferLength
-        this.smoothedVolume = this.smoothedVolume * 0.9 + Math.sqrt(volume) * 0.1
+        volume = Math.sqrt(volume)
+
+        this.smoothedVolume = this.smoothedVolume * 0.92 + volume * 0.08
+
+        // Detect beginning onset
+        if (!this.onsetDetected) {
+            this.onsetThreshold = this.onsetThreshold * 0.05 + this.minOnsetThreshold * 0.95
+            if (volume > this.onsetThreshold) {
+                this.onsetDetected = true
+                // console.log('onset detected')
+            }
+            this.onsetThreshold = volume
+        }
+    }
+
+    public getVolume() {
         return this.smoothedVolume
     }
 
@@ -167,9 +185,8 @@ class AudioFractalAnalysis {
 
     // Read classifier parameters from CSVs
     public get_classifier_parameters() {
-        const fs = require('fs')
-        let w_all = fs.readFileSync('dist/weights.csv', 'utf8')
-        let b_all = fs.readFileSync('dist/intercepts.csv', 'utf8')
+        let w_all = readFileSync(__dirname + '/static/weights.csv', 'utf8')
+        let b_all = readFileSync(__dirname + '/static/intercepts.csv', 'utf8')
         // remove whitespace and file terminators
         w_all = w_all.trim();
         b_all = b_all.trim();
@@ -190,7 +207,7 @@ class AudioFractalAnalysis {
     }
 
     // Called every frame with fftArray containing FFT data
-    public updateFft(fftArray: Uint8Array) {
+    public updateFft(fftArray: Float32Array) {
         if (this.stop_classifying) {
             // No need to do this if the classifier is done
             return
@@ -213,11 +230,10 @@ class AudioFractalAnalysis {
             let fi = this.feature_offset
             let tmp = 0
             while (i < fftArray.length && fi < this.classifier_weights[j].length) {
-                tmp = fftArray[i] * this.classifier_weights[j][fi]
-                this.class_scores[j] += (tmp / 255)
-//                if (isNaN(this.class_scores[j])) {
-//                    console.log(`${j} went sideways`)
-//                }
+                if (isFinite(fftArray[i])) {
+                    tmp = fftArray[i] * this.classifier_weights[j][fi]
+                    this.class_scores[j] += tmp // (tmp / 255)
+                }
                 i++
                 fi++
             }

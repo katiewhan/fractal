@@ -41,18 +41,17 @@ namespace Fractals {
     export const fractalPresets = {
         [InstrumentType.Clarinet]: {
             initialState: {
-                x: 0,
-                y: window.innerHeight + 150,
-                direction: -50
+                x: - (window.innerWidth / 2 + 400),
+                y: window.innerHeight / 2 + 400,
+                direction: -40
             },
             rules: { 
-                'X': 'F+[[X]-X]-F[-FX]+X',
-                'F': 'FF' 
+                'F': 'FF[+FF]FF[-FF][FF]',
             },
-            axiom: 'X',
-            distance: 30,
+            axiom: 'F',
+            distance: 25,
             angle: 30,
-            numIteration: 5
+            numIteration: 4
         }
     }
 }
