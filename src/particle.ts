@@ -15,15 +15,18 @@ class Particle {
     constructor(p5: P5, width: number, height: number, speedFactor: number = 1) {
         this.p5 = p5
         this.position = { x: this.p5.random(- width / 2, width / 2), y: this.p5.random(- height / 2, height / 2) }
-        this.radius = this.p5.random(3, 9);
+        this.radius = this.p5.random(40, 70);
         this.speed = { x: this.p5.random(-2 * speedFactor, 2 * speedFactor), y: this.p5.random(-2 * speedFactor, 2 * speedFactor) }
         this.color = this.p5.color(this.p5.random(200, 255), 200)
     }
 
-    public draw() {
-        this.p5.noStroke()
-        this.p5.fill(this.color)
-        this.p5.circle(this.position.x, this.position.y, this.radius)
+    public draw(image?: P5.Image) {
+        if (!image) {
+            this.p5.fill(this.color)
+            this.p5.circle(this.position.x, this.position.y, this.radius)
+        } else {
+            this.p5.image(image, this.position.x, this.position.y, this.radius, this.radius)
+        }
     }
 
     public moveParticle(noise: number) {

@@ -20,5 +20,5 @@ void main() {
     color = mix(color1, color, distance(gl_FragCoord.xy, cell1) / length(u_resolution));
     color = mix(color2, color, distance(gl_FragCoord.xy, cell2) / length(u_resolution));
 
-    gl_FragColor = vec4(color, alpha);
+    gl_FragColor = vec4(color * alpha, 1.0);
 }
