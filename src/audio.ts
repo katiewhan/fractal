@@ -105,7 +105,10 @@ class DimensionAudio {
         // easier to use, I can't get it to work....
         this.audioAnalyser.getFloatTimeDomainData(this.tDataArray)
         this.audioAnalyser.getFloatFrequencyData(this.fDataArray)
-        this.fractalAnalysis.updateFft(this.fDataArray)
+
+        if (this.onsetDetected) {
+            this.fractalAnalysis.updateFft(this.fDataArray)
+        }
 
         // Calculate volume with smoothing
         let volume = 0
@@ -146,7 +149,7 @@ class DimensionAudio {
         setTimeout(() => {
             // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
             this.generateFractal(Fractals.InstrumentType.Clarinet, this.getFractalSeedInfo(5))
-        }, 5000)
+        }, 45000)
     }
 }
 
