@@ -34,6 +34,7 @@ class App {
         this.p5.setup = () => {
             this.p5.createCanvas(window.innerWidth, window.innerHeight)
             this.p5.imageMode(this.p5.CENTER)
+            this.p5.frameRate(24)
         }
     
         this.p5.draw = () => {
