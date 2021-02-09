@@ -1,4 +1,6 @@
-import Fractals from './fractals' // want instrumentTYpe
+import { readFileSync } from 'fs'
+
+import Fractals from './fractals'
 
 function hasGetUserMedia() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
@@ -26,23 +28,21 @@ declare global {
     }
 }
 
-interface MaxFrequency {
-    index: number
-    value: number
-}
-
 class DimensionAudio {
     public bufferLength: number
     public fDataArray: Uint8Array
-    public tDataArray: Uint8Array
+    public tDataArray: Float32Array
 
     private audioContext: AudioContext
     private audioAnalyser: AnalyserNode
     private fractalAnalysis: AudioFractalAnalysis
 
     private smoothedVolume: number = 0
+    private minOnsetThreshold: number = 0.1
+    private onsetThreshold: number = this.minOnsetThreshold
+    private onsetDetected: boolean = false
 
-    constructor(useMic: boolean = true) {
+    constructor(private generateFractal: (type: Fractals.InstrumentType, seed: DimensionAudio.SeedParameters) => void, useMic: boolean = true) {
         const AudioContext = window.AudioContext || window.webkitAudioContext
         this.audioContext = new AudioContext()
         this.audioAnalyser = this.audioContext.createAnalyser()
@@ -72,8 +72,7 @@ class DimensionAudio {
         // Allocate dataArray which will contain FFT data of audio
         this.bufferLength = this.audioAnalyser.frequencyBinCount
         this.fDataArray = new Uint8Array(this.bufferLength)
-//        this.fDataArray = new Float32Array(this.bufferLength)
-        this.tDataArray = new Uint8Array(this.bufferLength)
+        this.tDataArray = new Float32Array(this.bufferLength)
 
         this.fractalAnalysis = new AudioFractalAnalysis(this.audioContext.sampleRate,
                                                         this.audioAnalyser.frequencyBinCount)
@@ -104,32 +103,60 @@ class DimensionAudio {
     public update() {
         // Update both time and frequency domain data
         // and in particular run the fractalAnalysis update
-        // SMH: while part of me thinks that the float frequency data should be
-        // easier to use, I can't get it to work....
-        this.audioAnalyser.getByteTimeDomainData(this.tDataArray)
+        this.audioAnalyser.getFloatTimeDomainData(this.tDataArray)
         this.audioAnalyser.getByteFrequencyData(this.fDataArray)
-        this.fractalAnalysis.updateFft(this.fDataArray)
-    }
 
-    public getVolume() {
+        if (this.onsetDetected) {
+            this.fractalAnalysis.updateFft(this.fDataArray)
+        }
+
+        // Calculate volume with smoothing
         let volume = 0
         for (let i = 0; i < this.bufferLength; i++) {
             volume += this.tDataArray[i] * this.tDataArray[i]
         }
         volume /= this.bufferLength
-        this.smoothedVolume = this.smoothedVolume * 0.9 + Math.sqrt(volume) * 0.1
+        volume = Math.sqrt(volume)
+
+        this.smoothedVolume = this.smoothedVolume * 0.92 + volume * 0.08
+
+        // Detect beginning onset
+        if (!this.onsetDetected) {
+            this.onsetThreshold = this.onsetThreshold * 0.05 + this.minOnsetThreshold * 0.95
+            if (volume > this.onsetThreshold) {
+                this.onsetDetected = true
+                console.log('Onset detected')
+                this.triggerFractalGeneration()
+            }
+            this.onsetThreshold = volume
+        }
+    }
+
+    public getVolume() {
         return this.smoothedVolume
+    }
+
+    public getOnsetDetected() {
+        return this.onsetDetected
     }
 
     public getFractalSeedInfo(numParam: number) {
         return this.fractalAnalysis.getParameters(numParam)
+    }
+
+    private triggerFractalGeneration() {
+        // Wait 45 seconds from first detection of sound to show fractal visuals
+        setTimeout(() => {
+            // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
+            this.generateFractal(Fractals.InstrumentType.Clarinet, this.getFractalSeedInfo(5))
+        }, 45000)
     }
 }
 
 class AudioFractalAnalysis {
     private freq: number[]
     private classes: string[]
-    private maxFrequencies: MaxFrequency[]
+    private maxFrequencies: DimensionAudio.MaxFrequency[]
     private features: UInt8Array[]
     private class_wins: number[]
     private classifier_weights: number[][]
@@ -148,7 +175,7 @@ class AudioFractalAnalysis {
         ]
         this.classes = [
         'broccoli', 'canyon', 'daisy', 'dna', 'feathers', 'florida', 'leaves',
-        'lightening', 'nautilus', 'nothing', 'pineapple', 'snowflake', 'tree', 'turtle'
+        'lightening', 'nautilus', 'pineapple', 'snowflake', 'tree', 'turtle'
         ]
         // Keep track of the max frequencies at each step;
         // also accumulate class scores for classifier
@@ -176,9 +203,8 @@ class AudioFractalAnalysis {
 
     // Read classifier parameters from CSVs
     public get_classifier_parameters() {
-        const fs = require('fs')
-        let w_all = fs.readFileSync('dist/weights.csv', 'utf8')
-        let b_all = fs.readFileSync('dist/intercepts.csv', 'utf8')
+        let w_all = readFileSync(__dirname + '/static/weights.csv', 'utf8')
+        let b_all = readFileSync(__dirname + '/static/intercepts.csv', 'utf8')
         // remove whitespace and file terminators
         w_all = w_all.trim();
         b_all = b_all.trim();
@@ -217,7 +243,7 @@ class AudioFractalAnalysis {
         this.maxFrequencies.push( {index: max_index, value: max_val} )
         this.updateClassifications(fftArray)
         // for testing:
-        if (this.maxFrequencies.length > 60) {
+        if (this.maxFrequencies.length > this.num_frames+30) {
             this.getClassPredictions()
         }
     }
@@ -321,6 +347,18 @@ class AudioFractalAnalysis {
         console.log(`Number of analysis steps: ${this.maxFrequencies.length}`)
         // TODO: memory clean-up?
         return {weights: w_values, moves: m_values}
+    }
+}
+
+namespace DimensionAudio {
+    export interface MaxFrequency {
+        index: number
+        value: number
+    }
+
+    export interface SeedParameters {
+        weights: number[]
+        moves: number[]
     }
 }
 
