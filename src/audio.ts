@@ -175,11 +175,10 @@ class AudioFractalAnalysis {
         ]
         this.classes = [
         'broccoli', 'canyon', 'daisy', 'dna', 'feathers', 'florida', 'leaves',
-        'lightening', 'nautilus', 'pineapple', 'snowflake', 'tree', 'turtle'
+        'lightening', 'nautilus', 'nothing', 'pineapple', 'snowflake', 'tree', 'turtle'
         ]
         // Keep track of the max frequencies at each step;
         // also accumulate class scores for classifier
-        // intercepts will initialize the scores
         this.maxFrequencies = []
         this.features = []
         this.class_wins = new Array(this.classes.length).fill(0)
@@ -243,7 +242,7 @@ class AudioFractalAnalysis {
         this.maxFrequencies.push( {index: max_index, value: max_val} )
         this.updateClassifications(fftArray)
         // for testing:
-        if (this.maxFrequencies.length > this.num_frames+30) {
+        if (this.maxFrequencies.length > this.num_frames+10) {
             this.getClassPredictions()
         }
     }
@@ -344,7 +343,6 @@ class AudioFractalAnalysis {
         this.analyze_freq = false
         console.log(`Weights: ${w_values}`)
         console.log(`Moves: ${m_values}`)
-        console.log(`Number of analysis steps: ${this.maxFrequencies.length}`)
         // TODO: memory clean-up?
         return {weights: w_values, moves: m_values}
     }
