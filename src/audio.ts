@@ -6,6 +6,25 @@ function hasGetUserMedia() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
 }
 
+function getFractalInstrument(fractal: string) {
+    switch (fractal) {
+        case 'broccoli': return Fractals.InstrumentType.Euphonium
+        case 'canyon': return Fractals.InstrumentType.Tuba
+        case 'daisy': return Fractals.InstrumentType.Bassoon
+        case 'dna': return Fractals.InstrumentType.PitchedPercussion
+        case 'feathers': return Fractals.InstrumentType.Trumpet
+        case 'florida': return Fractals.InstrumentType.Trombone
+        case 'leaves': return Fractals.InstrumentType.Oboe
+        case 'lightening': return Fractals.InstrumentType.Piano
+        case 'nautilus': return Fractals.InstrumentType.Horn
+        case 'pineapple': return Fractals.InstrumentType.NonPitchedPercussion
+        case 'snowflake': return Fractals.InstrumentType.Flute
+        case 'tree': return Fractals.InstrumentType.Clarinet
+        case 'turtle': return Fractals.InstrumentType.Saxes
+        default return -1
+    }
+}
+
 function argMax(array: number[]) {
     if (array.length === 0) {
         return -1;
@@ -298,7 +317,7 @@ class AudioFractalAnalysis {
         console.log(`Final win tally: ${this.class_wins}`)
         console.log(`Predicted class: ${class_pred}`)
         console.log(`Number of analysis steps: ${this.maxFrequencies.length}`)
-        return class_pred
+        return getFractalInstrument(class_pred)
     }
 
     // Called when we are ready to make the call to generate fractal;
