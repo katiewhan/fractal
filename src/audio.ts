@@ -21,7 +21,7 @@ function getFractalInstrument(fractal: string) {
         case 'snowflake': return Fractals.InstrumentType.Flute
         case 'tree': return Fractals.InstrumentType.Clarinet
         case 'turtle': return Fractals.InstrumentType.Saxes
-        default return -1
+        default: return -1
     }
 }
 
@@ -159,15 +159,12 @@ class DimensionAudio {
         return this.onsetDetected
     }
 
-    public getFractalSeedInfo(numParam: number) {
-        return this.fractalAnalysis.getParameters(numParam)
-    }
-
     private triggerFractalGeneration() {
         // Wait 45 seconds from first detection of sound to show fractal visuals
         setTimeout(() => {
             // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
-            this.generateFractal(Fractals.InstrumentType.Clarinet, this.getFractalSeedInfo(5))
+            console.log(this.fractalAnalysis.getClassPredictions())
+            this.generateFractal(Fractals.InstrumentType.Clarinet, this.fractalAnalysis.getParameters(5))
         }, 45000)
     }
 }
@@ -176,13 +173,12 @@ class AudioFractalAnalysis {
     private freq: number[]
     private classes: string[]
     private maxFrequencies: DimensionAudio.MaxFrequency[]
-    private features: UInt8Array[]
+    private features: Uint8Array[]
     private class_wins: number[]
     private classifier_weights: number[][]
     private classifier_intrcpts: number[]
     private num_frames: number
     private analyze_freq: boolean
-    private sampleRate: number
 
     constructor(sampleRate: number, frequencyBinCount: number) {
         // F5 E5 D5 C5 Bb4 A4 G4 F4 E4 D4 C4 Bb3 A3 G3 F3 E3 D3 C3 Bb2 A2 G2 F2 C2 D2 Bb1
@@ -270,7 +266,7 @@ class AudioFractalAnalysis {
     public updateClassifications(fftArray: Uint8Array) {
         // update array of features - push copy of FFT data
         // remove earliest data if needed
-        this.features.push([...fftArray])
+        this.features.push(fftArray)
         if (this.features.length > this.num_frames) {
             this.features.shift()
         } else {

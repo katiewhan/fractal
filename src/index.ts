@@ -134,7 +134,7 @@ class App {
 
     private drawParticles(audio: DimensionAudio, fractalImage: P5.Image) {
         const preProgress = Math.min(this.fractalProgress, 51) * 5
-        const alpha = (1 - Math.min(this.fractalProgress / 2000, 1.0)) * 255
+        const alpha = (1 - Math.min(this.fractalProgress / 1500, 1.0)) * 255
 
         this.p5.push()
         this.p5.tint(255, Math.min(preProgress, alpha))
@@ -179,7 +179,7 @@ class App {
         if (audio) {
             alpha = Math.min(audio.getVolume() * 50, 1.0)
         } else {
-            alpha = Math.min(this.fractalProgress / 2000, 1.0)
+            alpha = Math.min(this.fractalProgress / 1500, 1.0)
 
             if (alpha == 1.0) {
                 // Transition to next state
@@ -233,6 +233,7 @@ class App {
         const progress = this.fractalProgress / 5000
         const audioValue = audio.getVolume()
         const angle = audioValue * 20 //this.p5.noise(progress * 10) * 20
+        this.p5.tint(101, 67, 33)
         generator.generate((x, y, a, i) => {
             this.p5.push()
             this.p5.translate(x, y)
