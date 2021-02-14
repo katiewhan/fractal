@@ -174,7 +174,7 @@ class AudioFractalAnalysis {
     //private sampleRate: number
     private classes: string[]
     private maxFrequencies: DimensionAudio.MaxFrequency[]
-    private features: Uint8Array[]
+    private features: number[][]
     private class_wins: number[]
     private classifier_weights: number[][]
     private classifier_intrcpts: number[]
@@ -266,12 +266,7 @@ class AudioFractalAnalysis {
             if (this.frameCount > this.numFrames+10) {
                 this.doClassifier = false
                 // For testing:
-                this.getClassPredictions()
-                let maxDiff = 0
-                for (let i=0; i<this.features[0].length; i++) {
-                    maxDiff = Math.max(maxDiff, Math.abs(this.features[0][i] - this.features[10][i]))
-                }
-                console.log(`Max difference: ${maxDiff}`)
+                //this.getClassPredictions()
             }
         }
     }
