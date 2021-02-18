@@ -16,7 +16,7 @@ class Particle {
     constructor(p5: P5, width: number, height: number, speedFactor: number = 1) {
         this.p5 = p5
         this.position = { x: this.p5.random(- width / 2, width / 2), y: this.p5.random(- height / 2, height / 2) }
-        this.radius = this.p5.random(30, 70);
+        this.radius = this.p5.random(40, 60);
         this.speed = { x: this.p5.random(-2 * speedFactor, 2 * speedFactor), y: this.p5.random(-2 * speedFactor, 2 * speedFactor) }
         this.color = this.p5.color(this.p5.random(200, 255), 200)
         this.rotation = this.p5.random(0, Math.PI * 2)

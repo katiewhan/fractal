@@ -33,6 +33,7 @@ class App {
 
     private state: SketchState = SketchState.None
     private fractalProgress: number = 0
+    private backgroundAlpha: number = 1
 
     constructor(p5: P5) {
         this.p5 = p5
@@ -95,7 +96,12 @@ class App {
 
     public start() {
         // this.createParticles(this.backgroundParticles, 3, 5)
-        // this.state = SketchState.Shader
+        // this.state = SketchState.Fractal
+        // const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Flute]
+        // this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
+        // this.generator = new LSystem(fractalPreset.lSystem)
+        // this.backgroundColors = fractalPreset.backgroundColors
+        // this.foregroundColor = fractalPreset.foregroundColor
 
         this.state = SketchState.Listening
 
@@ -174,9 +180,10 @@ class App {
         shader.setUniform('color1', [backgroundColors[2].r / 255, backgroundColors[2].g / 255, backgroundColors[2].b / 255])
         shader.setUniform('color2', [backgroundColors[3].r / 255, backgroundColors[3].g / 255, backgroundColors[3].b / 255])
 
-        let alpha = 0
+        let alpha = this.backgroundAlpha
         if (audio) {
-            alpha = Math.min(audio.getVolume() * 50, 1.0)
+            alpha = alpha * 0.94 + Math.min(audio.getVolume() * 100, 1.0) * 0.06
+            this.backgroundAlpha = alpha
         } else {
             alpha = Math.min(this.fractalProgress / 1500, 1.0)
 
@@ -198,13 +205,6 @@ class App {
         const preProgress = Math.min(this.fractalProgress, 85) * 3
         const postProgress = Math.max(this.fractalProgress - 240, 0)
         const alpha = Math.max(255 - postProgress, 0)
-
-        // Draw image fading in as texture
-        // if (preProgress < 256) {
-        //     graphics.background(0)
-        //     graphics.tint(255, preProgress)
-        //     graphics.image(fractalImage, 0, 0, graphics.width, graphics.height)
-        // }
 
         this.p5.push()
         this.p5.tint(255, Math.min(preProgress, alpha))
@@ -229,7 +229,7 @@ class App {
     }
 
     private drawFractals(audio: DimensionAudio, fractalImage: P5.Image, generator: LSystem, foregroundColor: Fractals.Color) {
-        const progress = this.fractalProgress / 5000
+        const progress = this.fractalProgress / 3000
         const audioValue = audio.getVolume()
         const angle = audioValue * 20 //this.p5.noise(progress * 10) * 20
         this.p5.tint(foregroundColor.r, foregroundColor.g, foregroundColor.b)
@@ -237,7 +237,7 @@ class App {
             this.p5.push()
             this.p5.translate(x, y)
             this.p5.rotate(a + 2 * this.p5.noise(i + 10, progress * angle))
-            this.p5.image(fractalImage, 0, 0, 50 + 10 * this.p5.noise(i + 10, progress * angle), 50 + 10 * this.p5.noise(i + 10, progress * angle))
+            this.p5.image(fractalImage, 0, 0, 40 + 10 * this.p5.noise(i + 10, progress * angle), 40 + 10 * this.p5.noise(i + 10, progress * angle))
             this.p5.pop()
         }, progress, angle, this.p5.noise)
 

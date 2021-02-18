@@ -34,6 +34,7 @@ class LSystem {
         }
 
         this.fullPath = current
+        console.log(this.fullPath)
     }
 
     public generate(draw: (x: number, y: number, dir: number, index: number) => void, progress: number = 1, angleOffset: number = 0, noise: (x: number, y: number) => number): void {
@@ -43,22 +44,24 @@ class LSystem {
 
         for (let i = 0; i < pathLength; i++) {
             let currentState = states[states.length - 1]
+            let directionRad = currentState.direction * Math.PI / 180
 
             switch (this.fullPath[i]) {
                 case 'F':
-                    let directionRad = currentState.direction * Math.PI / 180
                     currentState.x += (this.distance + 10 * noise(i + 100, progress * angleOffset)) * Math.cos(directionRad)
                     currentState.y += (this.distance + 10 * noise(i + 1000, progress * angleOffset)) * Math.sin(directionRad)
 
                     draw(currentState.x, currentState.y, directionRad, i)
                     break
                 case 'f':
+                    currentState.x += (this.distance + 10 * noise(i + 100, progress * angleOffset)) * Math.cos(directionRad)
+                    currentState.y += (this.distance + 10 * noise(i + 1000, progress * angleOffset)) * Math.sin(directionRad)
                     break
                 case '+':
-                    currentState.direction += (this.angle + 10 * noise(i, progress * angleOffset))
+                    currentState.direction += (this.angle + noise(i, progress * angleOffset))
                     break
                 case '-':
-                    currentState.direction -= (this.angle + 10 * noise(i, progress * angleOffset))
+                    currentState.direction -= (this.angle + noise(i, progress * angleOffset))
                     break
                 case '[':
                     states.push({ x: currentState.x, y: currentState.y, direction: currentState.direction })
