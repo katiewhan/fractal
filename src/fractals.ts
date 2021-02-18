@@ -185,12 +185,12 @@ namespace Fractals {
                     direction: -40
                 },
                 rules: { 
-                    'F': 'FF[+FF]FF[-FF][FF]',
+                    'F': 'fF[+fF]ff[-fF][fF]',
                 },
                 axiom: 'F',
                 distance: 25,
                 angle: 30,
-                numIteration: 4
+                numIteration: 2
             },
             backgroundColors: [{ r: 255, g: 145, b: 54}, { r: 196, g: 84, b: 0 }, { r: 209, g: 114, b: 0 }, { r: 242, g: 227, b: 214 }],
             foregroundColor: { r: 101, g: 67, b: 33}
@@ -199,14 +199,14 @@ namespace Fractals {
             lSystem: {
                 initialState: {
                     x: -window.innerWidth / 4,
-                    y: -window.innerHeight / 2,
+                    y: -window.innerHeight / 4,
                     direction: -30
                 },
                 rules: { 
                     'F': 'F-fF+fF+F+f-F-fF+F+f-F-fF-fF+F',
                 },
                 axiom: 'F+F+F+F',
-                distance: 20,
+                distance: 30,
                 angle: 90,
                 numIteration: 2
             },

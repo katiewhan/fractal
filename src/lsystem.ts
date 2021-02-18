@@ -37,7 +37,7 @@ class LSystem {
         console.log(this.fullPath)
     }
 
-    public generate(draw: (x: number, y: number, dir: number, index: number) => void, progress: number = 1, angleOffset: number = 0, noise: (x: number, y: number) => number): void {
+    public generate(draw: (x: number, y: number, dir: number, index: number) => void, progress: number = 1, distanceOffset: number = 0, noise: (x: number) => number): void {
         let states: Fractals.LState[] = [{ x: this.initialState.x, y: this.initialState.y, direction: this.initialState.direction }]
 
         const pathLength = Math.floor(this.fullPath.length * progress)
@@ -45,23 +45,24 @@ class LSystem {
         for (let i = 0; i < pathLength; i++) {
             let currentState = states[states.length - 1]
             let directionRad = currentState.direction * Math.PI / 180
+            let currentDistance = this.distance + distanceOffset
 
             switch (this.fullPath[i]) {
                 case 'F':
-                    currentState.x += (this.distance + 10 * noise(i + 100, progress * angleOffset)) * Math.cos(directionRad)
-                    currentState.y += (this.distance + 10 * noise(i + 1000, progress * angleOffset)) * Math.sin(directionRad)
+                    currentState.x += (currentDistance + 10 * noise(i + 100)) * Math.cos(directionRad)
+                    currentState.y += (currentDistance + 10 * noise(i + 1000)) * Math.sin(directionRad)
 
                     draw(currentState.x, currentState.y, directionRad, i)
                     break
                 case 'f':
-                    currentState.x += (this.distance + 10 * noise(i + 100, progress * angleOffset)) * Math.cos(directionRad)
-                    currentState.y += (this.distance + 10 * noise(i + 1000, progress * angleOffset)) * Math.sin(directionRad)
+                    currentState.x += (currentDistance + 10 * noise(i + 100)) * Math.cos(directionRad)
+                    currentState.y += (currentDistance + 10 * noise(i + 1000)) * Math.sin(directionRad)
                     break
                 case '+':
-                    currentState.direction += (this.angle + noise(i, progress * angleOffset))
+                    currentState.direction += (this.angle + noise(i))
                     break
                 case '-':
-                    currentState.direction -= (this.angle + noise(i, progress * angleOffset))
+                    currentState.direction -= (this.angle + noise(i))
                     break
                 case '[':
                     states.push({ x: currentState.x, y: currentState.y, direction: currentState.direction })
