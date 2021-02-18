@@ -21,7 +21,7 @@ function getFractalInstrument(fractal: string) {
         case 'snowflake': return Fractals.InstrumentType.Flute
         case 'tree': return Fractals.InstrumentType.Clarinet
         case 'turtle': return Fractals.InstrumentType.Saxes
-        default: return -1
+        default: return Fractals.InstrumentType.Flute
     }
 }
 
@@ -163,8 +163,7 @@ class DimensionAudio {
         // Wait 45 seconds from first detection of sound to show fractal visuals
         setTimeout(() => {
             // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
-            console.log(this.fractalAnalysis.getClassPredictions())
-            this.generateFractal(Fractals.InstrumentType.Clarinet, this.fractalAnalysis.getParameters(5))
+            this.generateFractal(this.fractalAnalysis.getClassPredictions(), this.fractalAnalysis.getParameters(5))
         }, 45000)
     }
 }
