@@ -164,7 +164,7 @@ class DimensionAudio {
         setTimeout(() => {
             // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
             this.generateFractal(this.fractalAnalysis.getClassPredictions(), this.fractalAnalysis.getParameters(5))
-        }, 4000)
+        }, 40000)
     }
 }
 
