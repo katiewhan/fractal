@@ -73,7 +73,7 @@ class DimensionAudio {
         this.audioAnalyser.fftSize = 2048
         this.audioAnalyser.smoothingTimeConstant = 0.0
 //        this.audioAnalyser.minDecibels = -90
-        this.audioAnalyser.maxDecibels = -10
+        this.audioAnalyser.maxDecibels = -20
         console.log(`FFT size: ${this.audioAnalyser.fftSize}`)
         console.log(`Num freq bins: ${this.audioAnalyser.frequencyBinCount}`)
         console.log(`Sample rate: ${this.audioContext.sampleRate}`)
@@ -174,7 +174,7 @@ class AudioFractalAnalysis {
     //private sampleRate: number
     private classes: string[]
     private maxFrequencies: DimensionAudio.MaxFrequency[]
-    private features: number[][]
+    private features: Uint8Array[]
     private class_wins: number[]
     private classifier_weights: number[][]
     private classifier_intrcpts: number[]
@@ -196,7 +196,7 @@ class AudioFractalAnalysis {
         //]
         this.classes = [
         'broccoli', 'canyon', 'daisy', 'dna', 'feathers', 'florida', 'leaves',
-        'lightening', 'nautilus', 'nothing', 'pineapple', 'snowflake', 'tree', 'turtle'
+        'lightening', 'nautilus', 'pineapple', 'snowflake', 'tree', 'turtle'
         ]
         // Keep track of the max frequencies at each step;
         // also accumulate class scores for classifier
@@ -263,10 +263,15 @@ class AudioFractalAnalysis {
             this.updateClassifications(fftArray)
             this.frameCount++
             // Classifier won't be very robust if it runs longer than intended
-            if (this.frameCount > this.numFrames+10) {
+            if (this.frameCount >= this.numFrames+10) {
                 this.doClassifier = false
                 // For testing:
-                //this.getClassPredictions()
+//                this.getClassPredictions()
+//                let maxDiff = 0
+//                for (let i=0; i<this.features[0].length; i++) {
+//                    maxDiff = Math.max(maxDiff, Math.abs(this.features[10][i] - this.features[0][i]))
+//                }
+//                console.log(`Diff: ${maxDiff}`)
             }
         }
     }
@@ -275,12 +280,11 @@ class AudioFractalAnalysis {
     public updateClassifications(fftArray: Uint8Array) {
         // update array of features - push copy of FFT data
         // remove earliest data if needed
-        this.features.push([...fftArray])
+        this.features.push(fftArray.slice(0))
         if (this.features.length > this.numFrames) {
             this.features.shift()
-        } else {
+        } else if (this.features.length < this.numFrames) {
             // array of features not long enough to apply classifier yet
-            // (this might skip one useable frame, but whatever)
             return
         }
         // Accumulate class scores and record the max
@@ -299,17 +303,16 @@ class AudioFractalAnalysis {
                 }
                 offset += fftArray.length
             }
-            // Update the max class score (will only update if positive)
-            if (class_score > max_score) {
+            // Update the max class score
+            if (class_score > max_score || i === 0) {
                 max_score = class_score
                 max_index = i
             }
         }
         // Record which class is predicted for this chunk of frames
-        // (but only if its a strong - i.e. positive - prediction)
-        if (max_score > 0) {
-            this.class_wins[max_index] += 1
-        }
+        // (but only if the score meets some threshhold)
+        //if (max_score > -1000)
+        this.class_wins[max_index] += 1
     }
 
     // Call sometime in the first couple seconds to get predicted fractal class
