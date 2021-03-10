@@ -127,7 +127,7 @@ class DimensionAudio {
         this.audioAnalyser.getFloatTimeDomainData(this.tDataArray)
         this.audioAnalyser.getByteFrequencyData(this.fDataArray)
 
-        if (this.onsetDetected) {
+        if (this.initialOnsetDetected) {
             this.fractalAnalysis.updateFft(this.fDataArray)
         }
 
@@ -175,7 +175,7 @@ class DimensionAudio {
     }
 
     private triggerFractalGeneration() {
-        // Wait 45 seconds from first detection of sound to show fractal visuals
+        // Wait 30 seconds from first detection of sound to show fractal visuals
         setTimeout(() => {
             // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
             this.generateFractal(this.fractalAnalysis.getClassPredictions(), this.fractalAnalysis.getParameters(5))
