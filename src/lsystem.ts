@@ -1,6 +1,8 @@
 import Fractals from './fractals'
 
 class LSystem {
+    public size: number
+
     private axiom: string
     private rules: Fractals.LRules
     private distance: number
@@ -10,6 +12,8 @@ class LSystem {
     private fullPath: string = ''
 
     constructor(preset: Fractals.LPreset) {
+        this.size = preset.distance
+
         this.distance = preset.distance
         this.angle = preset.angle
         this.rules = preset.rules
@@ -34,7 +38,6 @@ class LSystem {
         }
 
         this.fullPath = current
-        console.log(this.fullPath)
     }
 
     public generate(draw: (x: number, y: number, dir: number, index: number) => void, progress: number = 1, distanceOffset: number = 0, noise: (x: number) => number): void {

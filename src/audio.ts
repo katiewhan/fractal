@@ -57,8 +57,10 @@ class DimensionAudio {
     private fractalAnalysis: AudioFractalAnalysis
 
     private smoothedVolume: number = 0
+    private volumeDelta: number = 0
     private minOnsetThreshold: number = 0.1
     private onsetThreshold: number = this.minOnsetThreshold
+    private initialOnsetDetected: boolean = false
     private onsetDetected: boolean = false
 
     constructor(private generateFractal: (type: Fractals.InstrumentType, seed: DimensionAudio.SeedParameters) => void, useMic: boolean = true) {
@@ -137,26 +139,39 @@ class DimensionAudio {
         volume /= this.bufferLength
         volume = Math.sqrt(volume)
 
+        const prevVolume = this.smoothedVolume
         this.smoothedVolume = this.smoothedVolume * 0.92 + volume * 0.08
+        this.volumeDelta = (prevVolume - this.smoothedVolume)
 
-        // Detect beginning onset
-        if (!this.onsetDetected) {
-            this.onsetThreshold = this.onsetThreshold * 0.05 + this.minOnsetThreshold * 0.95
-            if (volume > this.onsetThreshold) {
-                this.onsetDetected = true
-                console.log('Onset detected')
+        // Detect onset
+        this.onsetThreshold = this.onsetThreshold * 0.05 + this.minOnsetThreshold * 0.95
+        if (volume > this.onsetThreshold) {
+            if (!this.initialOnsetDetected) {
+                this.initialOnsetDetected = true
+                console.log('Initial onset detected')
                 this.triggerFractalGeneration()
             }
-            this.onsetThreshold = volume
+            this.onsetDetected = true
+        } else {
+            this.onsetDetected = false
         }
+        this.onsetThreshold = volume
     }
 
     public getVolume() {
         return this.smoothedVolume
     }
 
+    public getVolumeDelta() {
+        return this.volumeDelta
+    }
+
     public getOnsetDetected() {
         return this.onsetDetected
+    }
+
+    public getInitialOnsetDetected() {
+        return this.initialOnsetDetected
     }
 
     private triggerFractalGeneration() {
