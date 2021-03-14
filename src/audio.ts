@@ -71,8 +71,8 @@ class DimensionAudio {
         // smoothingTimeConstant: Smoothing; anything in (0,1) (NOT equal to 1)
         // minDecibels/maxDecibels: Might need to mess with?
         this.audioAnalyser.fftSize = 2048
-        this.audioAnalyser.smoothingTimeConstant = 0.0
-//        this.audioAnalyser.minDecibels = -90
+        this.audioAnalyser.smoothingTimeConstant = 0.8
+        this.audioAnalyser.minDecibels = -100
         this.audioAnalyser.maxDecibels = -20
         console.log(`FFT size: ${this.audioAnalyser.fftSize}`)
         console.log(`Num freq bins: ${this.audioAnalyser.frequencyBinCount}`)
@@ -256,17 +256,18 @@ class AudioFractalAnalysis {
                 }
             }
             this.maxFrequencies.push( {index: max_index, value: max_val} )
-            //console.log(`Max byte val: ${max_val}`)
         }
         if (this.doClassifier) {
             // Use frequency data for classification of fractal/instrument
             this.updateClassifications(fftArray)
             this.frameCount++
             // Classifier won't be very robust if it runs longer than intended
-            if (this.frameCount >= this.numFrames+10) {
+            if (this.frameCount >= this.numFrames+2) {
                 this.doClassifier = false
-                // For testing:
+                // For testing: predictions, max byte value
 //                this.getClassPredictions()
+//                this.maxFrequencies.sort(function(a, b) { return b.value - a.value; })
+//                console.log(`Max byte val: ${this.maxFrequencies[0].value}`)
 //                let maxDiff = 0
 //                for (let i=0; i<this.features[0].length; i++) {
 //                    maxDiff = Math.max(maxDiff, Math.abs(this.features[10][i] - this.features[0][i]))
@@ -310,7 +311,7 @@ class AudioFractalAnalysis {
             }
         }
         // Record which class is predicted for this chunk of frames
-        // (but only if the score meets some threshhold)
+        // (but only if the score meets some threshhold?)
         //if (max_score > -1000)
         this.class_wins[max_index] += 1
     }
@@ -321,11 +322,12 @@ class AudioFractalAnalysis {
         // each individual frame
         let class_index = argMax(this.class_wins)
         let class_pred = this.classes[class_index]
+        let instrument_pred = getFractalInstrument(class_pred)
         this.doClassifier = false
         console.log(`Final win tally: ${this.class_wins}`)
         console.log(`Predicted class: ${class_pred}`)
         console.log(`Number of frames used: ${this.frameCount}`)
-        return getFractalInstrument(class_pred)
+        return instrument_pred
     }
 
     // Called when we are ready to make the call to generate fractal;
