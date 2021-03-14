@@ -21,7 +21,7 @@ function getFractalInstrument(fractal: string) {
         case 'snowflake': return Fractals.InstrumentType.Flute
         case 'tree': return Fractals.InstrumentType.Clarinet
         case 'turtle': return Fractals.InstrumentType.Saxes
-        default: return -1
+        default: return Fractals.InstrumentType.Flute
     }
 }
 
@@ -57,8 +57,10 @@ class DimensionAudio {
     private fractalAnalysis: AudioFractalAnalysis
 
     private smoothedVolume: number = 0
+    private volumeDelta: number = 0
     private minOnsetThreshold: number = 0.1
     private onsetThreshold: number = this.minOnsetThreshold
+    private initialOnsetDetected: boolean = false
     private onsetDetected: boolean = false
 
     constructor(private generateFractal: (type: Fractals.InstrumentType, seed: DimensionAudio.SeedParameters) => void, useMic: boolean = true) {
@@ -125,7 +127,7 @@ class DimensionAudio {
         this.audioAnalyser.getFloatTimeDomainData(this.tDataArray)
         this.audioAnalyser.getByteFrequencyData(this.fDataArray)
 
-        if (this.onsetDetected) {
+        if (this.initialOnsetDetected) {
             this.fractalAnalysis.updateFft(this.fDataArray)
         }
 
@@ -137,35 +139,47 @@ class DimensionAudio {
         volume /= this.bufferLength
         volume = Math.sqrt(volume)
 
+        const prevVolume = this.smoothedVolume
         this.smoothedVolume = this.smoothedVolume * 0.92 + volume * 0.08
+        this.volumeDelta = (prevVolume - this.smoothedVolume)
 
-        // Detect beginning onset
-        if (!this.onsetDetected) {
-            this.onsetThreshold = this.onsetThreshold * 0.05 + this.minOnsetThreshold * 0.95
-            if (volume > this.onsetThreshold) {
-                this.onsetDetected = true
-                console.log('Onset detected')
+        // Detect onset
+        this.onsetThreshold = this.onsetThreshold * 0.05 + this.minOnsetThreshold * 0.95
+        if (volume > this.onsetThreshold) {
+            if (!this.initialOnsetDetected) {
+                this.initialOnsetDetected = true
+                console.log('Initial onset detected')
                 this.triggerFractalGeneration()
             }
-            this.onsetThreshold = volume
+            this.onsetDetected = true
+        } else {
+            this.onsetDetected = false
         }
+        this.onsetThreshold = volume
     }
 
     public getVolume() {
         return this.smoothedVolume
     }
 
+    public getVolumeDelta() {
+        return this.volumeDelta
+    }
+
     public getOnsetDetected() {
         return this.onsetDetected
     }
 
+    public getInitialOnsetDetected() {
+        return this.initialOnsetDetected
+    }
+
     private triggerFractalGeneration() {
-        // Wait 45 seconds from first detection of sound to show fractal visuals
+        // Wait 30 seconds from first detection of sound to show fractal visuals
         setTimeout(() => {
             // THIS IS WHERE WE PASS THE FINGERPRINT RESULT
-            console.log(this.fractalAnalysis.getClassPredictions())
-            this.generateFractal(Fractals.InstrumentType.Clarinet, this.fractalAnalysis.getParameters(5))
-        }, 45000)
+            this.generateFractal(this.fractalAnalysis.getClassPredictions(), this.fractalAnalysis.getParameters(5))
+        }, 30000)
     }
 }
 
