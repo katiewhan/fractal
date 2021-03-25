@@ -93,35 +93,35 @@ class App {
     }
 
     public start() {
-        this.createParticles(this.backgroundParticles, undefined, 3, 3)
-        this.state = SketchState.Fractal
-        const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Flute]
-        this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
-        this.generator = new LSystem(fractalPreset.lSystem)
-        this.backgroundColors = fractalPreset.backgroundColors
-        this.foregroundColor = fractalPreset.foregroundColor
+        // this.createParticles(this.backgroundParticles, undefined, 3, 3)
+        // this.state = SketchState.Fractal
+        // const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Flute]
+        // this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
+        // this.generator = new LSystem(fractalPreset.lSystem)
+        // this.backgroundColors = fractalPreset.backgroundColors
+        // this.foregroundColor = fractalPreset.foregroundColor
 
-        // this.state = SketchState.Listening
+        this.state = SketchState.Listening
 
         this.audio = new DimensionAudio((type: Fractals.InstrumentType, seed: DimensionAudio.SeedParameters) => {
-            // const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Oboe]
-            // this.backgroundColors = fractalPreset.backgroundColors
-            // this.foregroundColor = fractalPreset.foregroundColor
-            // this.generator = new LSystem(fractalPreset.lSystem)
+            const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Oboe]
+            this.backgroundColors = fractalPreset.backgroundColors
+            this.foregroundColor = fractalPreset.foregroundColor
+            this.generator = new LSystem(fractalPreset.lSystem)
 
-            // // Fetch fractal image from backend
-            // let params = ''
-            // for (let i = 0; i < seed.weights.length; i++) {
-            //     params += `w${i}=${seed.weights[i]}&`
-            // }
-            // for (let i = 0; i < seed.moves.length; i++) {
-            //     params += `m${i}=${seed.moves[i]}&`
-            // }
-            // this.fractalImage = this.p5.loadImage(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`, () => {
-            //     // Transition to next state
-            //     this.state = SketchState.LargeFractal
-            //     this.fractalProgress = 0
-            // })
+            // Fetch fractal image from backend
+            let params = ''
+            for (let i = 0; i < seed.weights.length; i++) {
+                params += `w${i}=${seed.weights[i]}&`
+            }
+            for (let i = 0; i < seed.moves.length; i++) {
+                params += `m${i}=${seed.moves[i]}&`
+            }
+            this.fractalImage = this.p5.loadImage(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`, () => {
+                // Transition to next state
+                this.state = SketchState.LargeFractal
+                this.fractalProgress = 0
+            })
         })
     }
 
@@ -225,7 +225,7 @@ class App {
     }
 
     private drawFractals(audio: DimensionAudio, fractalImage: P5.Image, generator: LSystem, foregroundColor: Fractals.Color) {
-        const preProgress = 1 //Math.min(this.fractalProgress / 2000, 1)
+        const preProgress = Math.min(this.fractalProgress / 2000, 1)
 
         this.p5.tint(foregroundColor.r, foregroundColor.g, foregroundColor.b, 255)
 
