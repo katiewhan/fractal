@@ -40,7 +40,12 @@ class LSystem {
         this.fullPath = current
     }
 
-    public generate(draw: (x: number, y: number, dir: number, index: number) => void, progress: number = 1, distanceOffset: number = 0, noise: (x: number) => number): void {
+    public generate(
+        draw: (x: number, y: number, dir: number, index: number) => void, 
+        noise: (i: number, o?: number, a?: number) => number,
+        progress: number = 1, 
+        distanceOffset: number = 0
+    ): void {
         let states: Fractals.LState[] = [{ x: this.initialState.x, y: this.initialState.y, direction: this.initialState.direction }]
 
         const pathLength = Math.floor(this.fullPath.length * progress)
@@ -52,14 +57,14 @@ class LSystem {
 
             switch (this.fullPath[i]) {
                 case 'F':
-                    currentState.x += (currentDistance + 10 * noise(i + 100)) * Math.cos(directionRad)
-                    currentState.y += (currentDistance + 10 * noise(i + 1000)) * Math.sin(directionRad)
+                    currentState.x += (currentDistance + noise(i, 100, 40)) * Math.cos(directionRad)
+                    currentState.y += (currentDistance + noise(i, 1000, 40)) * Math.sin(directionRad)
 
                     draw(currentState.x, currentState.y, directionRad, i)
                     break
                 case 'f':
-                    currentState.x += (currentDistance + 10 * noise(i + 100)) * Math.cos(directionRad)
-                    currentState.y += (currentDistance + 10 * noise(i + 1000)) * Math.sin(directionRad)
+                    currentState.x += (currentDistance + noise(i, 100, 40)) * Math.cos(directionRad)
+                    currentState.y += (currentDistance + noise(i, 1000, 40)) * Math.sin(directionRad)
                     break
                 case '+':
                     currentState.direction += (this.angle + noise(i))

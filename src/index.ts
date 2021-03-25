@@ -31,7 +31,7 @@ class App {
     private fractalProgress: number = 0
     private backgroundAlpha: number = 1
 
-    private sizeProgress: number = 0
+    private sizeProgress: number = 1
 
     constructor(p5: P5) {
         this.p5 = p5
@@ -93,35 +93,35 @@ class App {
     }
 
     public start() {
-        // this.createParticles(this.backgroundParticles, undefined, 3, 3)
-        // this.state = SketchState.Fractal
-        // const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Flute]
-        // this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
-        // this.generator = new LSystem(fractalPreset.lSystem)
-        // this.backgroundColors = fractalPreset.backgroundColors
-        // this.foregroundColor = fractalPreset.foregroundColor
+        this.createParticles(this.backgroundParticles, undefined, 3, 3)
+        this.state = SketchState.Fractal
+        const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Flute]
+        this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
+        this.generator = new LSystem(fractalPreset.lSystem)
+        this.backgroundColors = fractalPreset.backgroundColors
+        this.foregroundColor = fractalPreset.foregroundColor
 
-        this.state = SketchState.Listening
+        // this.state = SketchState.Listening
 
         this.audio = new DimensionAudio((type: Fractals.InstrumentType, seed: DimensionAudio.SeedParameters) => {
-            const fractalPreset = Fractals.fractalPresets[type]
-            this.backgroundColors = fractalPreset.backgroundColors
-            this.foregroundColor = fractalPreset.foregroundColor
-            this.generator = new LSystem(fractalPreset.lSystem)
+            // const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Oboe]
+            // this.backgroundColors = fractalPreset.backgroundColors
+            // this.foregroundColor = fractalPreset.foregroundColor
+            // this.generator = new LSystem(fractalPreset.lSystem)
 
-            // Fetch fractal image from backend
-            let params = ''
-            for (let i = 0; i < seed.weights.length; i++) {
-                params += `w${i}=${seed.weights[i]}&`
-            }
-            for (let i = 0; i < seed.moves.length; i++) {
-                params += `m${i}=${seed.moves[i]}&`
-            }
-            this.fractalImage = this.p5.loadImage(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`, () => {
-                // Transition to next state
-                this.state = SketchState.LargeFractal
-                this.fractalProgress = 0
-            })
+            // // Fetch fractal image from backend
+            // let params = ''
+            // for (let i = 0; i < seed.weights.length; i++) {
+            //     params += `w${i}=${seed.weights[i]}&`
+            // }
+            // for (let i = 0; i < seed.moves.length; i++) {
+            //     params += `m${i}=${seed.moves[i]}&`
+            // }
+            // this.fractalImage = this.p5.loadImage(`https://pe6ulsde12.execute-api.us-east-2.amazonaws.com/default/MusicFractalBot?${params}`, () => {
+            //     // Transition to next state
+            //     this.state = SketchState.LargeFractal
+            //     this.fractalProgress = 0
+            // })
         })
     }
 
@@ -181,7 +181,7 @@ class App {
             alpha = alpha * 0.94 + Math.min(audio.getVolume() * 100, 1.0) * 0.06
             this.backgroundAlpha = alpha
         } else {
-            alpha = Math.min(this.fractalProgress / 1500, 1.0)
+            alpha = Math.min(this.fractalProgress / 150, 1.0)
 
             if (alpha == 1.0) {
                 // Transition to next state
@@ -225,31 +225,30 @@ class App {
     }
 
     private drawFractals(audio: DimensionAudio, fractalImage: P5.Image, generator: LSystem, foregroundColor: Fractals.Color) {
-        const preProgress = Math.min(this.fractalProgress / 2000, 1)
+        const preProgress = 1 //Math.min(this.fractalProgress / 2000, 1)
 
-        this.p5.tint(foregroundColor.r, foregroundColor.g, foregroundColor.b)
+        this.p5.tint(foregroundColor.r, foregroundColor.g, foregroundColor.b, 255)
 
-        const audioValue = audio.getVolume() * 20
+        const audioValue = audio.getVolume()
         const noiseFunc = this.audioNoise(audioValue)
 
-        const sign = audio.getVolumeDelta() > 0 ? 1 : -1
-        this.sizeProgress += sign
-        const sizeDelta = this.sizeProgress * 0.1
-        const fractalSize = generator.size + sizeDelta
+        const sign = Math.round(Math.max(Math.min(audio.getVolumeDelta() * 1000, 1), -1))
+        this.sizeProgress = this.sizeProgress * 0.99 + (this.sizeProgress + sign) * 0.01
+        let fractalSize = generator.size + this.sizeProgress
 
         generator.generate((x, y, a, i) => {
             this.p5.push()
             this.p5.translate(x, y)
-            this.p5.rotate(a + noiseFunc(i + 10))
-            this.p5.image(fractalImage, 0, 0, fractalSize + 10 * noiseFunc(i + 10), fractalSize + 10 * noiseFunc(i + 10))
+            this.p5.rotate(noiseFunc(i, 0, a))
+            this.p5.image(fractalImage, 0, 0, fractalSize + noiseFunc(i, 10, 40), fractalSize + noiseFunc(i, 10, 40))
             this.p5.pop()
-        }, preProgress, sizeDelta, noiseFunc)
+        }, noiseFunc, preProgress, this.sizeProgress)
 
         this.fractalProgress++
     }
 
     private audioNoise(audio: number) {
-        return (i: number) => this.p5.noise(i, audio)
+        return (i: number, offset: number = 0, amp: number = 1) => amp * this.p5.noise((i / 20) + offset, audio)
     }
 }
 
