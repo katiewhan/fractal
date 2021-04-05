@@ -29,9 +29,11 @@ class App {
 
     private state: SketchState = SketchState.None
     private fractalProgress: number = 0
+    private fractalAlpha: number = 1
     private backgroundAlpha: number = 1
+    private useBackgroundAlpha: boolean = false
 
-    private sizeProgress: number = 0
+    private sizeProgress: number = 1
 
     constructor(p5: P5) {
         this.p5 = p5
@@ -69,7 +71,7 @@ class App {
                     if (this.audio && this.audio.getInitialOnsetDetected()) this.drawDots()
                     break
                 case SketchState.Particles:
-                    if (this.backgroundShader && this.backgroundColors) this.drawBackground(this.backgroundShader, this.backgroundColors)
+                    if (this.backgroundShader && this.backgroundColors && this.audio) this.drawBackground(this.backgroundShader, this.backgroundColors, this.audio)
                     if (this.audio && this.fractalImage) this.drawParticles(this.audio, this.fractalImage)
                     break
                 case SketchState.LargeFractal:
@@ -133,7 +135,7 @@ class App {
 
     private drawParticles(audio: DimensionAudio, fractalImage: P5.Image) {
         const preProgress = Math.min(this.fractalProgress, 51) * 5
-        const alpha = (1 - Math.min(this.fractalProgress / 1500, 1.0)) * 255
+        const alpha = this.fractalAlpha * 255
 
         this.p5.push()
         this.p5.tint(255, Math.min(preProgress, alpha))
@@ -145,6 +147,7 @@ class App {
         this.p5.pop()
 
         this.fractalProgress++
+        this.fractalAlpha -= (1 / 1200) // 50 seconds to reach 0
     }
 
     private drawDots() {
@@ -160,7 +163,7 @@ class App {
         }
     }
 
-    private drawBackground(shader: P5.Shader, backgroundColors: Fractals.Color[], audio?: DimensionAudio) {
+    private drawBackground(shader: P5.Shader, backgroundColors: Fractals.Color[], audio: DimensionAudio) {
         for (let particle of this.backgroundParticles) {
             particle.moveParticle(0)
         }
@@ -177,16 +180,18 @@ class App {
         shader.setUniform('color2', [backgroundColors[3].r / 255, backgroundColors[3].g / 255, backgroundColors[3].b / 255])
 
         let alpha = this.backgroundAlpha
-        if (audio) {
-            alpha = alpha * 0.94 + Math.min(audio.getVolume() * 100, 1.0) * 0.06
+        if (this.useBackgroundAlpha) {
+            alpha = alpha * 0.92 + Math.min(audio.getVolume() * 100, 1.0) * 0.08
             this.backgroundAlpha = alpha
         } else {
-            alpha = Math.min(this.fractalProgress / 1500, 1.0)
+            alpha = Math.min(1, 1 - this.fractalAlpha)
 
-            if (alpha == 1.0) {
+            if (alpha == 1) {
                 // Transition to next state
                 this.state = SketchState.Fractal
                 this.fractalProgress = 0
+                this.fractalAlpha = 1
+                this.useBackgroundAlpha = true
             }
         }
 
@@ -227,29 +232,28 @@ class App {
     private drawFractals(audio: DimensionAudio, fractalImage: P5.Image, generator: LSystem, foregroundColor: Fractals.Color) {
         const preProgress = Math.min(this.fractalProgress / 2000, 1)
 
-        this.p5.tint(foregroundColor.r, foregroundColor.g, foregroundColor.b)
+        this.p5.tint(foregroundColor.r, foregroundColor.g, foregroundColor.b, 255)
 
-        const audioValue = audio.getVolume() * 20
+        const audioValue = audio.getVolume() * 10
         const noiseFunc = this.audioNoise(audioValue)
 
-        const sign = audio.getVolumeDelta() > 0 ? 1 : -1
-        this.sizeProgress += sign
-        const sizeDelta = this.sizeProgress * 0.1
-        const fractalSize = generator.size + sizeDelta
+        const sign = Math.round(Math.max(Math.min(audio.getVolumeDelta() * 1000, 1), -1))
+        this.sizeProgress = this.sizeProgress * 0.99 + (this.sizeProgress + sign) * 0.01
+        let fractalSize = generator.size + this.sizeProgress
 
         generator.generate((x, y, a, i) => {
             this.p5.push()
             this.p5.translate(x, y)
-            this.p5.rotate(a + noiseFunc(i + 10))
-            this.p5.image(fractalImage, 0, 0, fractalSize + 10 * noiseFunc(i + 10), fractalSize + 10 * noiseFunc(i + 10))
+            this.p5.rotate(noiseFunc(i, 0, a))
+            this.p5.image(fractalImage, 0, 0, fractalSize + noiseFunc(i, 10, 40), fractalSize + noiseFunc(i, 10, 40))
             this.p5.pop()
-        }, preProgress, sizeDelta, noiseFunc)
+        }, noiseFunc, preProgress, this.sizeProgress)
 
         this.fractalProgress++
     }
 
     private audioNoise(audio: number) {
-        return (i: number) => this.p5.noise(i, audio)
+        return (i: number, offset: number = 0, amp: number = 1) => amp * this.p5.noise((i / 20) + offset, audio)
     }
 }
 

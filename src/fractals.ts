@@ -215,7 +215,7 @@ namespace Fractals {
                     'Z': '[-FFFFFF][+FFFFFF]F'
                 },
                 axiom: 'VZFFF',
-                distance: 10,
+                distance: 20,
                 angle: 20,
                 numIteration: 6
             },

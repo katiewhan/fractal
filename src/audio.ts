@@ -140,7 +140,7 @@ class DimensionAudio {
         volume = Math.sqrt(volume)
 
         const prevVolume = this.smoothedVolume
-        this.smoothedVolume = this.smoothedVolume * 0.92 + volume * 0.08
+        this.smoothedVolume = this.smoothedVolume * 0.99 + volume * 0.01
         this.volumeDelta = (prevVolume - this.smoothedVolume)
 
         // Detect onset
