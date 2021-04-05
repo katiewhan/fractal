@@ -278,10 +278,25 @@ class AudioFractalAnalysis {
             // Classifier won't be very robust if it runs longer than intended
             if (this.frameCount >= this.numFrames+2) {
                 this.doClassifier = false
-                // For testing: predictions, max byte value
-//                this.getClassPredictions()
-//                this.maxFrequencies.sort(function(a, b) { return b.value - a.value; })
-//                console.log(`Max byte val: ${this.maxFrequencies[0].value}`)
+                // For testing
+                if (false) {
+                    // Display predictions and download features
+                    this.getClassPredictions()
+                    let flat_features = []
+                    for (let i = 0; i < this.features.length; i++) {
+                        flat_features.push(...this.features[i])
+                    }
+                    let blob = new Blob([flat_features.join(',')], { type: 'text/csv' })
+                    let a = window.document.createElement("a")
+                    a.href = window.URL.createObjectURL(blob)
+                    a.download = "features.csv"
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                    // Max byte val:
+                    this.maxFrequencies.sort(function(a, b) { return b.value - a.value; })
+                    console.log(`Max byte val: ${this.maxFrequencies[0].value}`)
+                }
 //                let maxDiff = 0
 //                for (let i=0; i<this.features[0].length; i++) {
 //                    maxDiff = Math.max(maxDiff, Math.abs(this.features[10][i] - this.features[0][i]))
