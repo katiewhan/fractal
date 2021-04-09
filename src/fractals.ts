@@ -145,19 +145,17 @@ namespace Fractals {
         [InstrumentType.PitchedPercussion]: {
             lSystem: {
                 initialState: {
-                    x: 0,
-                    y: 3 * window.innerHeight / 4,
+                    x: -window.innerWidth / 2 + 100,
+                    y: window.innerHeight / 2,
                     direction: 0
                 },
                 rules: { 
-                    'A': 'F++FFFF--F--FFFF++F',
-                    'B': 'F--FFFF++F++FFFF--F',
-                    'C': 'BFA--BFA',
-                    'D': 'CFC--CFC'
+                    'X': '-YFF+XFFX+FFY-',
+                    'Y': '+XFF-YFFY-FFX+'
                 },
-                axiom: '-D--D',
+                axiom: 'X',
                 distance: 30,
-                angle: 46,
+                angle: 90,
                 numIteration: 4
             },
             backgroundColors: [{ r: 26, g: 26, b: 26 }, { r: 4, g: 84, b: 87 }, { r: 32, g: 181, b: 186 }, { r: 124, g: 213, b: 216 }],
@@ -203,9 +201,11 @@ namespace Fractals {
         [InstrumentType.Piano]: {
             lSystem: {
                 initialState: {
+                    // SMH note: (x,y) = (0,0) is center of window,
+                    // and I think y axis is flipped?
                     x: 0,
-                    y: window.innerHeight / 2,
-                    direction: -90
+                    y: -window.innerHeight / 2,
+                    direction: 90
                 },
                 rules: { 
                     'V': '[+++W][---W]YV',
