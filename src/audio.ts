@@ -72,7 +72,7 @@ class DimensionAudio {
         // fftSize: number of samples of time data for windowed FFT (integer power of 2)
         // smoothingTimeConstant: Smoothing; anything in (0,1) (NOT equal to 1)
         // minDecibels/maxDecibels: Might need to mess with?
-        this.audioAnalyser.fftSize = 2048
+        this.audioAnalyser.fftSize = 4096
         this.audioAnalyser.smoothingTimeConstant = 0.8
         this.audioAnalyser.minDecibels = -100
         this.audioAnalyser.maxDecibels = -20
@@ -184,16 +184,14 @@ class DimensionAudio {
 }
 
 class AudioFractalAnalysis {
-    //private freq: number[]
-    //private sampleRate: number
     private classes: string[]
     private maxFrequencies: DimensionAudio.MaxFrequency[]
-    private features: Uint8Array[]
-    private class_wins: number[]
-    private classifier_weights: number[][]
-    private classifier_intrcpts: number[]
-    private numFrames: number
-    private frameCount: number
+    private band_indices: number[]
+    private band_maxes: number[]
+    private features: number[]
+    private class_scores: number[]
+    private fingerprints: number[][]
+    private featureCount: number
     private doAnalyzer: boolean
     private doClassifier: boolean
 
@@ -201,161 +199,163 @@ class AudioFractalAnalysis {
         // Resolution in frequency domain is sample rate divided by (time domain)
         // data length (time domain data length = twice fft length)
         //this.sampleRate = sampleRate
-        // F5 E5 D5 C5 Bb4 A4 G4 F4 E4 D4 C4 Bb3 A3 G3 F3 E3 D3 C3 Bb2 A2 G2 F2 C2 D2 Bb1
-        // special frequencies to potentially listen to
-        //this.freq = [
-        //    698.46, 659.26, 287.33, 523.25, 466.16, 440, 392, 349.23, 329.64,
-        //    293.67, 261.63, 233.08, 220, 196, 174.61, 164.81, 146.83, 130.81,
-        //    116.54, 110, 97.999, 87.307, 65.406, 73.416, 58.27
-        //]
         this.classes = [
         'broccoli', 'canyon', 'daisy', 'dna', 'feathers', 'florida', 'leaves',
         'lightening', 'nautilus', 'pineapple', 'snowflake', 'tree', 'turtle'
         ]
         // Keep track of the max frequencies at each step;
-        // also accumulate class scores for classifier
+        // features will be max frequencies in various bands,
+        // the indices of which in th FFT data are given by band_indices
+        // allocate for features (assuming 4 seconds @ 24 FPS)
+        // as well as ultimate scores
         this.maxFrequencies = []
-        this.features = []
-        this.class_wins = new Array(this.classes.length).fill(0)
-        let params = this.get_classifier_parameters()
-        this.classifier_weights = params[0]
-        this.classifier_intrcpts = params[1]
-        this.numFrames = this.classifier_weights[0].length / frequencyBinCount
-        this.frameCount = 0
+        this.band_indices = [10, 20, 40, 80, 159, 508]
+        this.band_maxes = new Array(this.band_indices.length).fill(0)
+        this.features = new Array(this.band_indices.length*4*24).fill(0)
+        this.class_scores = new Array(this.classes.length).fill(0)
+        this.fingerprints = this.get_fingerprints(2 * frequencyBinCount)
+        this.featureCount = 0
         this.doAnalyzer = true
         this.doClassifier = true
         // check that sizing makes sense
-        if (this.classes.length != this.classifier_intrcpts.length ||
-            this.classes.length != this.classifier_weights.length) {
+        if (this.classes.length != this.fingerprints.length) {
             console.log(`Classes length: ${this.classes.length}`)
-            console.log(`Intercepts length: ${this.classifier_intrcpts.length}`)
-            console.log(`Weights length: ${this.classifier_weights.length}`)
+            console.log(`Fingerprints length: ${this.fingerprints.length}`)
         }
-        console.log(`Num frames: ${this.numFrames}`)
     }
 
-    // Read classifier parameters from CSVs
-    public get_classifier_parameters() {
-        let w_all = readFileSync(__dirname + '/static/weights.csv', 'utf8')
-        let b_all = readFileSync(__dirname + '/static/intercepts.csv', 'utf8')
+    // Read fingerprints from CSVs
+    private get_fingerprints(fftSize: number) {
+        let f_all = readFileSync(__dirname + '/static/fingerprints_4096.csv', 'utf8')
+        if (fftSize != 4096) {
+            console.log(`Expected FFT size 4096; got ${fftSize}`)
+        }
         // remove whitespace and file terminators
-        w_all = w_all.trim();
-        b_all = b_all.trim();
-        let w_lines = w_all.split('\n')
-        let b_lines = b_all.split('\n')
-        let m = w_lines.length
-        let weights = []
-        let intercepts = new Array(m)
+        f_all = f_all.trim();
+        let f_lines = f_all.split('\n')
+        let m = f_lines.length
+        let fingerprints = []
         for (let i = 0; i < m; i++) {
-            let tokens = w_lines[i].split(',')
-            weights[i] = new Array(tokens.length)
-            intercepts[i] = parseFloat(b_lines[i])
+            let tokens = f_lines[i].split(',')
+            fingerprints[i] = new Array(tokens.length)
             for (let j = 0; j < tokens.length; ++j) {
-                weights[i][j] = parseFloat(tokens[j])
+                fingerprints[i][j] = parseFloat(tokens[j])
             }
         }
-        return [weights, intercepts]
+        return fingerprints
     }
 
     // Called every frame with fftArray containing FFT data
     public updateFft(fftArray: Uint8Array) {
-        if (this.doAnalyzer) {
-            // get max absolute value, save frequency index
-            let max_val = 0
-            let max_index = 0
-            for (let i = 0; i < fftArray.length; i++) {
-                if (max_val < Math.abs(fftArray[i])) {
-                    max_val = Math.abs(fftArray[i])
-                    max_index = i
-                }
-            }
-            this.maxFrequencies.push( {index: max_index, value: max_val} )
+        if (this.doAnalyzer || this.doClassifier) {
+            let max_indval = this.get_max_frequencies(this.band_maxes, fftArray)
+            this.maxFrequencies.push( {index: max_indval[0], value: max_indval[1]} )
         }
         if (this.doClassifier) {
-            // Use frequency data for classification of fractal/instrument
-            this.updateClassifications(fftArray)
-            this.frameCount++
-            // Classifier won't be very robust if it runs longer than intended
-            if (this.frameCount >= this.numFrames+2) {
+            // Copy this.band_maxes - the frequency maxima in various bands -
+            // into features
+            for (let i = 0; i < this.band_maxes.length; i++) {
+                this.features[this.featureCount] = this.band_maxes[i]
+                this.featureCount++
+            }
+            if (this.featureCount >= this.features.length) {
                 this.doClassifier = false
-                // For testing
-                if (false) {
-                    // Display predictions and download features
-                    this.getClassPredictions()
-                    let flat_features = []
-                    for (let i = 0; i < this.features.length; i++) {
-                        flat_features.push(...this.features[i])
-                    }
-                    let blob = new Blob([flat_features.join(',')], { type: 'text/csv' })
-                    let a = window.document.createElement("a")
-                    a.href = window.URL.createObjectURL(blob)
-                    a.download = "features.csv"
-                    document.body.appendChild(a)
-                    a.click()
-                    document.body.removeChild(a)
-                    // Max byte val:
-                    this.maxFrequencies.sort(function(a, b) { return b.value - a.value; })
-                    console.log(`Max byte val: ${this.maxFrequencies[0].value}`)
-                }
-//                let maxDiff = 0
-//                for (let i=0; i<this.features[0].length; i++) {
-//                    maxDiff = Math.max(maxDiff, Math.abs(this.features[10][i] - this.features[0][i]))
-//                }
-//                console.log(`Diff: ${maxDiff}`)
+                this.do_correlations()
             }
         }
     }
 
-    // Record features; update classification guesses
-    public updateClassifications(fftArray: Uint8Array) {
-        // update array of features - push copy of FFT data
-        // remove earliest data if needed
-        this.features.push(fftArray.slice(0))
-        if (this.features.length > this.numFrames) {
-            this.features.shift()
-        } else if (this.features.length < this.numFrames) {
-            // array of features not long enough to apply classifier yet
-            return
-        }
-        // Accumulate class scores and record the max
-        // FFT data is passed as "Bytes" - so an integer between 0 and 255
-        // Scale by 255 to get a float in [0,1]
-        let max_index = 0
-        let max_score = 0
-        for (let i = 0; i < this.classes.length; i++) {
-            let class_score = this.classifier_intrcpts[i]
-            let tmp = 0
-            let offset = 0
-            for (let j = 0; j < this.numFrames; j++) {
-                for (let k = 0; k < fftArray.length; k++) {
-                    tmp = this.features[j][k] * this.classifier_weights[i][offset+k]
-                    class_score += (tmp / 255)
+    // Analyze the frequencies to get max frequency (index) in various bands
+    private get_max_frequencies(band_maxes: number[], fftArray: Uint8Array) {
+        let band_number = 0
+        let max_ind = 0
+        let max_val = -1
+        let overall_max_ind = 0
+        let overall_max_val = -1
+        for (let i = 0; i < fftArray.length; i++) {
+            // As we go through elements of fftArray,
+            // keep track of max and reset as we pass through the bands
+            if (i >= this.band_indices[band_number]) {
+                band_maxes[band_number] = max_ind
+                max_val = -1
+                band_number++
+            }
+            if (band_number >= this.band_indices.length) { break }
+            // fftArray elements are nonnegative, no need for abs
+            if (max_val < fftArray[i]) {
+                max_val = fftArray[i]
+                max_ind = i
+                // Overall max only needs to be updated when band max is
+                if (overall_max_val < fftArray[i]) {
+                    overall_max_val = fftArray[i]
+                    overall_max_ind = i
                 }
-                offset += fftArray.length
-            }
-            // Update the max class score
-            if (class_score > max_score || i === 0) {
-                max_score = class_score
-                max_index = i
             }
         }
-        // Record which class is predicted for this chunk of frames
-        // (but only if the score meets some threshhold?)
-        //if (max_score > -1000)
-        this.class_wins[max_index] += 1
+        return [overall_max_ind, overall_max_val]
+    }
+
+    // Do cross-correlation between features and loaded fingerprints
+    private do_correlations() {
+        // Features represent ~ 4 seconds of sound
+        // Essentially, convolve this with loaded fingerprints in some way.
+        // We will view features/fingerprints as a sparse representation of
+        //   one-hot encoding of the band maxima.
+        // So the score will be the number of times the band maxima line up/agree
+        // This yields a sequence of windowed score values for each class,
+        // and take max value over windows as final class score
+        let max_score = 0
+        let score = 0
+        let step_length = this.band_indices.length
+        let stop_index = this.fingerprints[0].length - this.features.length
+        // Iterate over fingerprints/classes
+        for (let k = 0; k < this.fingerprints.length; k++) {
+            // Iterate over shifts in fingerprint (convolve with features)
+            max_score = -1 
+            for (let j = 0; j < stop_index; j += step_length) {
+                // Iterate over elements in features and
+                // compute score for this window
+                score = 0
+                for (let i = 0; i < this.features.length; i++) {
+                    if (this.features[i] == this.fingerprints[k][j+i]) {
+                        score++
+                    }
+                }
+                if (score > max_score) {
+                    max_score = score
+                }
+            } // end j loop (convolution)
+            this.class_scores[k] = max_score
+        } // end k loop (all fingerprints/classes)
+
+        // For testing
+        if (false) {
+            // Display predictions and download features
+            this.getClassPredictions()
+            let blob = new Blob([this.features.join(',')], { type: 'text/csv' })
+            let a = window.document.createElement("a")
+            a.href = window.URL.createObjectURL(blob)
+            a.download = "features.csv"
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            // Max byte val:
+            this.maxFrequencies.sort(function(a, b) { return b.value - a.value; })
+            console.log(`Max byte val: ${this.maxFrequencies[0].value}`)
+        }
     }
 
     // Call sometime in the first couple seconds to get predicted fractal class
     public getClassPredictions() {
         // Predicted class is majority vote over predictions from
         // each individual frame
-        let class_index = argMax(this.class_wins)
+        let class_index = argMax(this.class_scores)
         let class_pred = this.classes[class_index]
         let instrument_pred = getFractalInstrument(class_pred)
         this.doClassifier = false
-        console.log(`Final win tally: ${this.class_wins}`)
+        console.log(`Final win tally: ${this.class_scores}`)
         console.log(`Predicted class: ${class_pred}`)
-        console.log(`Number of frames used: ${this.frameCount}`)
+        console.log(`Feature length: ${this.featureCount}`)
         return instrument_pred
     }
 
