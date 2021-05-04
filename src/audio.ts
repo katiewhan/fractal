@@ -222,7 +222,7 @@ class AudioFractalAnalysis {
         this.skipCount = 0
         this.doAnalyzer = true
         this.doClassifier = true
-        this.testing = true
+        this.testing = false
         // check that sizing makes sense
         if (this.classes.length != this.fingerprints.length) {
             console.log(`Classes length: ${this.classes.length}`)
