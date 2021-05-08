@@ -96,8 +96,8 @@ class App {
     public start() {
         // this.createParticles(this.backgroundParticles, undefined, 3, 3)
         // this.state = SketchState.Fractal
-        // const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Flute]
-        // this.fractalImage = this.p5.loadImage('https://i.imgur.com/sNZ2Jv7.png')
+        // const fractalPreset = Fractals.fractalPresets[Fractals.InstrumentType.Tuba]
+        // this.fractalImage = this.p5.loadImage('https://i.imgur.com/W3q4bOu.png')
         // this.generator = new LSystem(fractalPreset.lSystem)
         // this.backgroundColors = fractalPreset.backgroundColors
         // this.foregroundColor = fractalPreset.foregroundColor

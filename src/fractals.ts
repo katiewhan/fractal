@@ -178,7 +178,7 @@ namespace Fractals {
                 numIteration: 3
             },
             backgroundColors: [{ r: 60, g: 81, b: 72 }, { r: 145, g: 136, b: 127 }, { r: 70, g: 53, b: 57 }, { r: 87, g: 70, b: 54 }],
-            foregroundColor: { r: 189, g: 201, b: 173 }
+            foregroundColor: { r: 230, g: 240, b: 220 }
         },
         [InstrumentType.Oboe]: {
             lSystem: {
@@ -196,7 +196,7 @@ namespace Fractals {
                 numIteration: 3
             },
             backgroundColors: [{ r: 57, g: 87, b: 0 }, { r: 106, g: 135, b: 1 }, { r: 171, g: 171, b: 25 }, { r: 198, g: 179, b: 4 }],
-            foregroundColor: { r: 89, g: 2, b: 2 }
+            foregroundColor: { r: 89, g: 52, b: 12 }
         },
         [InstrumentType.Piano]: {
             lSystem: {
@@ -239,7 +239,7 @@ namespace Fractals {
                 numIteration: 5
             },
             backgroundColors: [{ r: 132, g: 102, b: 51 }, { r: 111, g: 93, b: 48 }, { r: 64, g: 27, b: 7 }, { r: 25, g: 15, b: 6 }],
-            foregroundColor: { r: 242, g: 213, b: 160 }
+            foregroundColor: { r: 242, g: 213, b: 214 }
         },
         [InstrumentType.Trumpet]: {
             lSystem: {
@@ -276,7 +276,7 @@ namespace Fractals {
                 numIteration: 9
             },
             backgroundColors: [{ r: 67, g: 137, b: 190 }, { r: 87, g: 149, b: 190 }, { r: 11, g: 21, b: 142 }, { r: 1, g: 0, b: 68 }],
-            foregroundColor: { r: 199, g: 200, b: 178 }
+            foregroundColor: { r: 180, g: 176, b: 120 }
         },
         [InstrumentType.Tuba]: {
             lSystem: {
@@ -294,7 +294,7 @@ namespace Fractals {
                 numIteration: 3
             },
             backgroundColors: [{ r: 147, g: 154, b: 167 }, { r: 118, g: 115, b: 102 }, { r: 96, g: 94, b: 97 }, { r: 108, g: 81, b: 63 }],
-            foregroundColor: { r: 91, g: 113, b: 104 }
+            foregroundColor: { r: 12, g: 42, b: 36 }
         }
     }
 }
